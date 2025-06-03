@@ -1,0 +1,18 @@
+---
+title: "Crickles"
+subtitle: "Athletic Performance Analytics"
+listing:
+  contents: posts
+  sort: "date desc"
+  type: grid
+  categories: true
+  fields: [image, date, title, subtitle, categories, reading-time]
+  page-size: 6
+page-layout: full
+---
+
+## Welcome to Crickles
+
+Your introduction content here, similar to your current WordPress landing page.
+
+Latest news and updates will appear below:

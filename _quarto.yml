@@ -1,0 +1,44 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Crickles"
+  description: "Athletic performance analytics and cardiac health insights"
+  
+  navbar:
+    logo: images/logo.png  # Add your logo
+    left:
+      - text: "Home"
+        href: index.qmd
+      - text: "Navigator"
+        href: app.qmd
+      - text: "Research"
+        menu:
+          - text: "Sustainable Performance"
+            href: content/sustainable.qmd
+          # Add other long-form content here
+      - text: "About"
+        href: about.qmd
+      - text: "Contact"
+        href: contact.qmd
+    
+  sidebar:
+    - title: "Recent Posts"
+      style: "floating"
+      contents:
+        - section: "Posts"
+          contents: posts
+
+format:
+  html:
+    theme: 
+      - cosmo
+      - custom.scss  # Custom styling
+    css: styles.css
+    toc: true
+    code-fold: true
+
+
+
+
