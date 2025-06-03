@@ -7,7 +7,6 @@ website:
   description: "Athletic performance analytics and cardiac health insights"
   
   navbar:
-    logo: images/logo.png  # Add your logo
     left:
       - text: "Home"
         href: index.qmd
@@ -17,28 +16,16 @@ website:
         menu:
           - text: "Sustainable Performance"
             href: content/sustainable.qmd
-          # Add other long-form content here
       - text: "About"
         href: about.qmd
       - text: "Contact"
         href: contact.qmd
-    
-  sidebar:
-    - title: "Recent Posts"
-      style: "floating"
-      contents:
-        - section: "Posts"
-          contents: posts
 
 format:
   html:
-    theme: 
-      - cosmo
-      - custom.scss  # Custom styling
-    css: styles.css
+    theme: cosmo
     toc: true
     code-fold: true
-
 
 
 
