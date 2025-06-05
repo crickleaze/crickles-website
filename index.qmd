@@ -11,8 +11,6 @@ listing:
 page-layout: full
 ---
 
-## Welcome to Crickles
+## CRICKLE
 
-Your introduction content here, similar to your current WordPress landing page.
-
-Latest news and updates will appear below:
+*Definition* - ( *Arch. exc.* in *pl*.: **crickles**) A pre-symptomatic cardiac irregularity, detectable by ECG, caused by intense athletic activity with insufficient recovery.
