@@ -2,8 +2,5 @@
 title: "About"
 ---
 
-About this site
+While you’re getting fit, stay healthy. Crickles provides unique cardiac stress analysis calculated from the activities you record on your sports devices. This helps you to compare your training load to other athletes, build an appropriate amount of recovery into your exercise program and possibly spot and analyse anomalous heart rate readings at an early stage.
 
-```{r}
-1 + 1
-```
