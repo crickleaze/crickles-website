@@ -15,7 +15,7 @@ website:
       - text: "Research"
         menu:
           - text: "Sustainable Performance"
-            href: content/sustainable.qmd
+            href: sustainable.qmd
       - text: "About"
         href: about.qmd
       - text: "Contact"
