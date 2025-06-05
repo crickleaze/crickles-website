@@ -1,0 +1,500 @@
+---
+title: "Sustainable Heart Rate Levels in Crickles"
+author: "Ian Green"
+date: today
+format: 
+  html:
+    self-contained: true
+    toc: true
+    toc-depth: 2
+    number-sections: true
+editor: visual
+params:
+  athlete: 320170
+  sample_id: "13038162852"
+---
+
+## Introduction
+
+Here we show how Crickles calculates Sustainable Heart Rate. The methodology is described and code snippets in R are given to illustrate the exact calculations. For non-R-programmers the snippets are broadly readable once you grasp that **\|\>** means *then*, **mutate** is defining a variable and **map** (and variants such as **map_dbl**) is an instruction to run a function over a range of values. If you prefer you can just skip over all the grey boxes that show code.
+
+Sustainable Heart Rate is used in the setting of zones and in the determination of Cardiac Stress; the latter requires much more sophisticated modelling and will be documented separately.
+
+Sustainable Heart Rate in this context is taken to be the heart rate that an athlete can sustain for one hour. This is preferred over maximum heart rate for purposes such as zone setting as it is more stable and less susceptible to the frequent heart rate measurement anomalies observed when using chest straps and sports watches. It can be thought of as an alternative to the use of Lactate Threshold Heart Rate (LTHR) in this regard. Since we lack the ability to measure blood lactate or inhaled and exhaled gases, LTHR is not available to us whereas sustainable heart rate can be directly measured.
+
+The process for determining sustainable heart rate is described in three sections:
+
+1.  *Preparation*. Mainly this is data preparation. Since this is not generally replicable by the reader, what it needs to achieve is described in place of the actual process of data gathering.
+
+2.  *Background analysis*. This is the analysis of a history of data in order to determine certain values that will be used to estimate Sustainable Heart Rate in each case.
+
+3.  *Application to individuals*. Here we describe how the Sustainable Heart Rate and associated data shown in Crickles is derived.
+
+## Preparation
+
+In code not shown here we load three data sets:
+
+1.  **selection** - a sample of activities over a three year period from athletes who were active before the start and after the end of that period. We include activities only from athletes who did at least 30 with heart rate data of over an hour or more in each of the three years. We only include activities that have a Crickles *Regularity* value of **Regular** in order to screen out activities where the chest strap or sports watch recording the heart rate was not performing correctly.
+
+2.  **athlete_age** - a dataframe simply giving the age of each athlete at the mid point of the middle year in the three year range.
+
+3.  **sample_athlete** - a dataframe of all historical activities for a sample Crickles user.
+
+In addition, we define a function called **fetch_streams()** that gets the stream-level data - typically second by second heart rate - for a given activity.
+
+```{r hidden, echo = FALSE, messages = FALSE, warnings = FALSE}
+
+library(tidyverse)
+library(purrr)
+library(future)
+library(furrr)
+library(scales)
+library(zoo)
+
+suppressMessages(conflict_prefer("filter", "dplyr"))
+suppressMessages(conflict_prefer("lag", "dplyr"))
+
+readRDS("~/crickles/intervals/legacy_acts.rds") -> activities
+readRDS("~/crickles/definitive_files/Logs/athlete_log_old.rds") -> athlete_log
+readRDS("~/crickles/intervals/crickles/extras/nick.rds") -> sample_athlete
+
+athlete_age <- athlete_log |> 
+  filter(!is.na(DOB)) |> 
+  rename(athlete_id = athleteID) |> 
+  mutate(DOB = as.numeric(DOB),
+         age = interval(as.Date(DOB, origin = "1970-01-01"), as.Date("2022-07-01"))/years(1)) |> 
+  select(athlete_id, age) 
+
+# utility function to get streams for an activity
+fetch_streams <- function(athleteID,ID) {
+  # gets a feather file locally if it's there 
+  # else copies it from remote to local first
+  
+  
+  localDir <- "~/crickles/definitive_files/streams/"
+  localSubDir <- paste(localDir,athleteID,sep="")
+  # need to check for existence of localSubDir and make it missing
+  if (!dir.exists(localSubDir)) {
+    dir.create(localSubDir)
+  }
+  
+  localPath <- paste(localSubDir,"/s_",ID,".rds",sep="")
+
+  if (!file.exists(localPath)) {
+    print(paste("Getting", ID, "remotely"))
+    pemFile <- "~/crickles/definitive_files/security/crickey.pem"
+    remoteDir <- "ec2-user@ec2-54-195-187-206.eu-west-1.compute.amazonaws.com:/mnt/efs/activities/streams/"
+    remotePath <- paste(remoteDir,athleteID,"/s_",ID,".rds",sep="")
+    commandPrequel <- "scp -i"
+    command <- paste(commandPrequel, pemFile, remotePath, localSubDir)
+    system(command)
+  }
+  
+  tryCatch({
+    readRDS(localPath) -> stream
+  }, error = function(e){
+    # message("Could not get stream for athlete/ID ", athleteID, " ", ID)
+  })
+  return(stream)
+}
+
+```
+
+```{r prepare data, echo = FALSE, cache = TRUE, messages = FALSE, warnings = FALSE}
+
+# In non-visible code we load activities into a dataframe called activities
+acts_pool <- activities |>
+  filter(type %in%  c("Ride", "Run", "VirtualRide"), regularity == "Regular", moving_time > 360) -> rides
+
+acts_pool |> 
+  group_by(athlete_id) |> 
+  summarise(first = min(start_date_local), last = max(start_date_local), count = n()) -> candidates
+candidates |> filter(first <= "2021-01-01", last >= "2024-01-01", count > 100) -> temp_athletes
+
+# message("pre-discarded athletes: ", nrow(temp_athletes))
+
+selection <- rides |> 
+  mutate(year = year(start_date_local)) |> 
+  filter(athlete_id %in% temp_athletes$athlete_id,  year %in% 2021:2023)
+
+# message("acts before discards: ", nrow(selection))
+
+# Now ensure that each athlete has at least 30 rides >= 1 hour every year
+discards <- selection |> 
+  filter(moving_time >= 3600) |> 
+  group_by(athlete_id, year) |> 
+  tally() |> 
+  filter(n < 30) |> 
+  pull(athlete_id) |> 
+  unique()
+
+# message("athletes discarded: ", length(discards))
+
+selection <- selection |> filter(! athlete_id %in% discards)
+
+# message("acts after discards: ", nrow(selection))
+
+```
+
+## Background analysis
+
+Although we use Sustainable Heart Rate as a reference point in time, we are usually interested in efforts over shorter time windows than one hour. Fortunately, there are stable relationships between sustainable heart rate levels over different time windows and we can use these to baseline efforts over a range of different time windows to an hour-equivalent rate.
+
+We use historical data to establish what these relationships are and to confirm their stability.
+
+```{r analysis_functions, cache = TRUE, messages = FALSE, warnings = FALSE}
+
+# first we define a ladder of four functions needed to calc sustainable 
+# heart rate levels over a number of time windows for many athletes
+
+# 1 - function to get hr windows for one streams file
+hr_windows <- function(streams) {
+  
+  if (!"heartrate" %in% names(streams)) {
+    message("No heartrate")
+    return(NA)
+  }
+  
+  # If necessary, complete time series and fill gaps
+  if (nrow(streams) != max(streams$time) + 1) {
+    max_ok_gap <- 10
+    min_heartrate <- min(streams$heartrate, na.rm = TRUE)
+
+    streams <- streams |>
+      mutate(next_gap = lead(time) - time,
+             heartrate = if_else(next_gap < max_ok_gap, heartrate, min_heartrate)) |>
+      complete(time = full_seq(time, period = 1)) |>
+      fill(heartrate)
+  }
+  
+  # specify the windows and remove any that are longer than the activity
+  grid <- 60 * c(6, 20, 40, 60)
+  grid <- grid[grid <= max(streams$time, na.rm = TRUE)]
+  
+  # calculate the max sustained hr for each window and return the list
+  result <- map_dbl(grid, \(x) max(rollmean(streams$heartrate, x, partial = FALSE), 
+                                   na.rm = TRUE))
+  output <- replace(rep(NA, 4), 
+                    seq_along(result), 
+                    ifelse(is.finite(result), result, NA))
+  names(output) <- c("HR_6", "HR_20", "HR_40", "HR_60")
+  return(as.list(output))
+}
+
+# 2 - function to get the hr windows for a set of activities
+many_windows <- function(acts) {
+  safe_fetch_hr <- possibly(\(athlete, act_id) fetch_streams(athlete, act_id) |> 
+                              hr_windows(),
+                            otherwise = NULL)
+  
+  map2_df(acts$athlete_id, acts$id, safe_fetch_hr)
+}
+
+# 3 - function to process a set of activities by athlete
+athlete_windows <- function(acts, athlete) {
+  acts |> filter(athlete_id == athlete) |> 
+    group_by(year) |> 
+    nest() |> 
+    mutate(results = map(data, \(x) suppressWarnings(many_windows(x)))) |> 
+    unnest(results) |> 
+    summarise(
+      max_6  = max(HR_6,  na.rm = TRUE), 
+      max_20 = max(HR_20, na.rm = TRUE), 
+      max_40 = max(HR_40, na.rm = TRUE), 
+      max_60 = max(HR_60, na.rm = TRUE)) |> 
+    select(- year) |> 
+    map(median) |>
+    as_tibble() |>
+    mutate(ratio_6 = max_60/max_6,
+           ratio_20 = max_60/max_20,
+           ratio_40 = max_60/max_40)
+}
+
+# 4 - function to process a set of activities for many athletes
+many_athletes <- function(acts) {
+  plan(multisession, workers = 8)
+  athletes <- unique(acts$athlete_id)
+  result <- future_map_dfr(
+    athletes, 
+    possibly(\(athlete) {
+      athlete_windows(acts, athlete) |> 
+        mutate(athlete_id = athlete)
+    }, 
+    otherwise = NULL))
+  return(result)
+}
+
+# now, run the last function to get a dataframe for all athletes:
+all_athletes <- many_athletes(selection)
+
+```
+
+```{r optional save, eval = FALSE, include = FALSE}
+saveRDS(all_athletes, "all_athletes.rds")
+
+```
+
+```{r boxplot, messages = FALSE, warnings = FALSE}
+
+# now we can prepare visualisations of the analysis,
+# starting with a boxplot:
+
+x_order_ratio <- c("ratio_6", "ratio_20", "ratio_40")
+
+box_plot <- all_athletes |>
+  pivot_longer(cols = c(ratio_6, ratio_20, ratio_40), 
+               names_to = "variable", 
+               values_to = "value") |>
+  mutate(variable = factor(variable, levels = x_order_ratio)) |>
+  ggplot(aes(x = variable, y = value)) +
+    geom_boxplot() +
+    labs(title = "Distribution of ratios across athletes", 
+         x = "window", 
+         y = "ratio to 1 hour") +
+    theme_minimal()
+
+if (!is.null(params$athlete)) {
+  overlay_point <- all_athletes |>
+  filter(athlete_id == params$athlete) |>
+  select(all_of(x_order_ratio)) |>
+  pivot_longer(cols = everything(), 
+               names_to = "variable", 
+               values_to = "point_value") |>
+  mutate(variable = factor(variable, levels = x_order_ratio))
+  box_plot <- box_plot +
+    geom_point(data = overlay_point, 
+               aes(x = variable, y = point_value),
+                color = "red", 
+                size = 3, 
+                shape = 18)
+}
+
+box_plot
+
+```
+
+The box plot shows the range of values for each of the ratios. The red lozenges show the values for our sample athlete whose data we'll be looking at later.
+
+The median values across all athletes can be summarised as follows:
+
+```{r, echo=FALSE}
+all_athletes |>
+  select(-athlete_id) |>
+  map_dbl(median) |> 
+  round(3)
+```
+
+Here the max\_ values show the median maximum heart rate for the period in minutes shown. For example, max_20 gives the median heart rate that can be sustained for 20 minutes by this sample of athletes on Crickles. The ratio\_ values, which are ultimately more important in Crickles, are the median values of the ratio between the sustainable rate over one hour and the corresponding period, respectively. For example, ratio_20 is the median value of the 60 minutes sustainable heart rate over the 20 minute sustainable heart rate; ratio_60 isn't shown because by definition it would always be 1. These ratios enable us to infer what levels sustained over different durations might imply for the capacity to sustain a heart rate for an hour.
+
+We're going to use ratio_n values to calculate sustainable heart rate so it matters that they're stable and reasonably consistent between athletes. Experience shows that they don't change much over time. We can get a measure of their stability across athletes by looking at the interquartile range, or spread of the majority of the values, as a proportion of the median:
+
+```{r variation}
+all_athletes |> 
+  select(-athlete_id) |> 
+  map_dbl(\(x) (100 * IQR(x)/median(x)) |> round(1))
+```
+
+This shows that there is much less dispersion of the ratios than there is of the maximum values, and it's the ratios that we need to be consistent across time and athletes. Taking ratio_20 as an example again, this shows that half of the athletes have values lying in a band around the median whose width is 3.5% of the median value (so most would be within 2% of the median).
+
+We might wonder whether the ratios change as athletes age. We know that maximum heart rates does, and we can verify that here. For example, we can show the tendency for the heart rate that can be sustained for 20 minutes to decline with age:
+
+```{r hr vs age, messages = FALSE}
+all_athletes <- all_athletes |> 
+  left_join(athlete_age) 
+  
+all_athletes |> 
+  ggplot(aes(x = age, y = max_20)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = F) +
+    theme_light() +
+    labs(title = "Sustainable 20 minute heart rate as a function of age",
+          y = "bpm",
+          caption = paste("Source: Crickles. n: ", nrow(all_athletes)))
+
+```
+
+There is no such relationship between the ratios and age. To get a better sense of the relationship between all of these variables and age we can look at a correlation matrix:
+
+```{r correlations, messages = FALSE, warnings = FALSE}
+all_athletes |> 
+  select(-athlete_id) |> 
+  cor() |> 
+  as.table() |> 
+  as.data.frame() |> 
+  setNames(c("Var1", "Var2", "Correlation")) |> 
+  ggplot(aes(Var1, Var2, fill = Correlation)) +
+  geom_tile(color = "white") + 
+  geom_text(aes(label = scales::label_number(accuracy = 0.01)(Correlation),
+                color = abs(Correlation) < 0.5), 
+                size = 3.5) + 
+  scale_fill_gradient2(low = "blue", 
+                       mid = "white", 
+                       high = "red", 
+                       midpoint = 0) +
+  scale_color_manual(values = c("black", "white"), 
+                     guide = "none") + 
+  theme_minimal() +
+  labs(title = "Correlation Matrix", 
+       fill = "Correlation", 
+       x = "", 
+       y = "") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+It is evident that age correlates strongly (and negatively) with maximum heart rate levels - about 60% in all windows - but only inconsequentially with the ratios.
+
+## Application to individual athletes
+
+The calculation of Sustainable Heart Rate is in two steps:
+
+1.  For each activity where heart rate is recorded the observed maximum heart rate over each of the time windows cited above is calculated. Each of these is weighted, also as above, to convert it to an estimate of a one hour equivalent. The maximum of these is recorded as the **spot_hr** for that activity. The purpose of this is to use information from a number of different time windows as it is only relatively rarely that an athlete will operate at or over threshold for an hour or more.
+
+2.  At any point in time Crickles looks back to find the maximum recent spot_hr value. Recency is important as fitness, including cardiac fitness, varies seasonally and with age and a performance observed, say, a year ago may not be repeatable today. Conversely, it is necessary to look back far enough to capture any efforts that are still indicative of current fitness. The Sustainable Heart Rate calculation aims to attain a balance that captures relevantly recent activities while discarding observations as they become stale.
+
+### Determining spot_hr
+
+```{r, eval = TRUE}
+
+# We create a function that calculates the maximum sustained hr over each window
+# and then converts these to an hour equivalent using the weights found above.
+
+# First, we make a function that does this given 'streams'...
+hr_windows_weighted <- function(streams) {  
+  
+  # Define HR weights explicitly
+  weights <- c(HR_6 = 0.913, HR_20 = 0.954, HR_40 = 0.98, HR_60 = 1)
+
+  # Safely compute sustainable HR values
+  sus_windows <- possibly(hr_windows, 
+                          otherwise = setNames(rep(NA_real_, length(weights)), names(weights)))(streams)
+
+  sus_windows <- unlist(sus_windows)[names(weights)] 
+
+  # Calculate weighted HR
+  weighted_hr <- sus_windows * weights
+
+  # Find max weighted HR, handling NA
+  spot_hr <- suppressWarnings(max(weighted_hr, na.rm = TRUE))
+  if (!is.finite(spot_hr)) spot_hr <- NA_real_
+
+  # Find corresponding window length and extract numeric part
+  spot_window <- if (!is.na(spot_hr)) {
+    names(weighted_hr)[which.max(weighted_hr)] |> 
+      str_remove("HR_") |> 
+      as.numeric()
+  } else {
+    NA_real_
+  }
+
+  # Return formatted list
+  list(
+    spot_hr = round(spot_hr, 1),
+    best_window = spot_window,
+    all_weighted_hr = round(weighted_hr, 1)
+  )
+}
+
+# Then we wrap this in a function that takes an activity id...
+activity_windows_weighted <- function(act_ID) {
+  safe_fetch_streams <- possibly(fetch_streams, 
+                                 otherwise = NULL)
+  safe_hr_windows_weighted <- possibly(hr_windows_weighted, 
+                                       otherwise = list(spot_hr = NA))
+  this_streams <- safe_fetch_streams(params$athlete, act_ID)
+  
+  if (is.null(this_streams)) return(NA)
+  results <- safe_hr_windows_weighted(this_streams)
+  return(results$spot_hr)
+}
+
+```
+
+As an example, take an activity that has this heart rate chart:
+
+```{r sample chart}
+
+sample <- fetch_streams(params$athlete, params$sample_id) 
+sample |>
+  mutate(minutes = time/60) |>
+  ggplot(aes(x = minutes, y = heartrate)) +
+  geom_point(col = "red") +
+  geom_line(col = "red3") +
+  theme_light()
+```
+
+We can find the sustained heart rate over each of the time windows:
+
+```{r sample windows}
+hr_windows(sample) |> unlist() |> round(1)
+```
+
+For example, the value labelled HR_20 is the highest heart rate that was sustained for 20 minutes.
+
+Using this information together with the equivalency weights, we calculate the spot_hr and show the time window on which this is based:
+
+```{r sample spot_hr}
+hr_windows_weighted(sample)
+```
+
+In this example, the short effort spike that can be seen on the chart almost half way through the activity gives us the highest estimate for the one hour sustainable heart rate so we use that.
+
+The *spot_hr*, being the estimated sustained heart rate for each individual activity, is shown in Crickles on the *Activities* page as is the corresponding time window, which appears as *Best_HR_Bucket*.
+
+### Sustainable Heart Rate
+
+From the history of spot_hr's for each activity with heart rate data we need to compute a sustainable heart rate estimate for each point in time. For this, we must observe and remember the greatest recent effort, remembering that it is relatively rare for an athlete to push themselves to the limit. The way that Crickles currently composes a sustainable heart rate estimate from the history of spot_hr's is to average the highest value from the last four weeks and the highest value from the last twelve weeks (which may be the same). The rationale for this is as follows... As fitness varies, we take the last four week period to be definitive for current fitness. On the other hand, observations taken from over twelve weeks (almost a quarter) into the past are taken to be stale from the perspective of current capability. Observations of spot_hr from between four and the twelve weeks ago can still colour the current estimate but cannot wholly define it.
+
+We can illustrate this with an example.
+
+```{r sustainable_hr, eval = TRUE}
+
+# sample_athlete is a dataframe of activities for one sample athlete
+# here we calculate the spot_hr for each one
+plan(multisession, workers = 8)
+sample_athlete$spot_hr <- future_map_dbl(sample_athlete$ID, activity_windows_weighted) 
+plan(sequential)
+
+# a bit of renaming...
+sample_athlete <- sample_athlete |> 
+  rename(start_date_local = Date,
+         id = ID)
+
+# now we define a function to roll up sustainable hr as described
+sus_hr <- function(acts) {
+acts |>
+  arrange(start_date_local) |>
+  mutate(date1 = ymd(as.Date(start_date_local)),
+         spot_hr_valid = ifelse(Regular == "Regular", spot_hr, NA)) |>
+  complete(date1 = full_seq(date1, period = 1)) |>
+  fill(spot_hr, spot_hr_valid) |>
+  mutate(sus_hr_short = rollmax(spot_hr_valid,
+                                28,
+                                align = "right",
+                                na.rm = TRUE,
+                                fill = NA),
+          sus_hr_long = rollmax(spot_hr_valid,
+                                84,
+                                align = "right",
+                                na.rm = TRUE,
+                                fill = NA),
+          sustainable_hr = round(0.5*(sus_hr_short + sus_hr_long),1)) |>
+  select(-c(date1, sus_hr_short, sus_hr_long, spot_hr_valid)) |>
+  drop_na(id) |>
+  arrange(desc(start_date_local)) -> acts
+return(acts)
+}
+
+# and see how that applies to our sample athlete:
+sus_hr(sample_athlete) |> 
+  ggplot(aes(x = start_date_local)) +
+  geom_point(aes(y = spot_hr), col = "grey", alpha = 0.5) +
+  geom_line(aes(y = sustainable_hr), col = "seagreen") +
+  theme_light() +
+  labs(title = "Sustainable heart rate (line) over spot_hr (points)", 
+       x = "date",
+       y = "heart rate (bpm)")
+
+```
+
+We can see that, while there are many different methods we could use to calculate sustainable heart rate including some that give a less stepped line, the method that we use does a good job of sitting just above the spot_hr values. Those points that lie on the green line are precisely those for activities whose heart rate intensity, shown as **HRI** on the *Activities* page, is \>= 1. On the Crickles Navigator *Timeline* page this is shown as **Intensity** in the tool tip for each point with heart rate data, where it is multiplied by 100 (so, for example, 90 instead of 0.9).
