@@ -4,7 +4,8 @@ project:
 
 website:
   title: "Crickles"
-  description: "Athletic performance analytics and cardiac health insights"
+  description: "Heart health insights for endurance sports"
+  favicon: favicon.ico
   
   navbar:
     left:
