@@ -1,9 +1,8 @@
 ---
 title: "Navigator"
-page-layout: custom
 format:
   html:
-    minimal: true
+    page-layout: custom
 ---
 ::: {.app-container}
 <iframe src="https://navigator.crickles.org" class="app-iframe" title="Crickles Navigator Application"></iframe>
@@ -17,11 +16,17 @@ html, body {
   overflow: hidden !important;
 }
 
-/* Hide Quarto title blocks but keep navbar */
+/* Hide Quarto title blocks but keep navbar visible */
 .quarto-title-block,
 #title-block-header,
 .breadcrumb {
   display: none !important;
+}
+
+/* Ensure navbar stays visible and fixed */
+.navbar {
+  display: block !important;
+  visibility: visible !important;
 }
 
 /* Make the main content area work with fixed navbar */
