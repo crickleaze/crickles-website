@@ -25,7 +25,7 @@
     "href": "contact.html",
     "title": "Contact",
     "section": "",
-    "text": "If you have a suggestion, a comment, a question or want to collaborate, or just want to say hello, feel free to get in touch at ian@crickles.org or using this form:\n\n \n\n&lt;label for=\"name\"&gt;Name *&lt;/label&gt;\n&lt;input type=\"text\" id=\"name\" name=\"name\" required&gt;\n\n\n&lt;label for=\"email\"&gt;Email *&lt;/label&gt;\n&lt;input type=\"email\" id=\"email\" name=\"email\" required&gt;\n\n\n&lt;label for=\"subject\"&gt;Subject&lt;/label&gt;\n&lt;input type=\"text\" id=\"subject\" name=\"subject\"&gt;\n\n\n&lt;label for=\"message\"&gt;Message *&lt;/label&gt;\n&lt;textarea id=\"message\" name=\"message\" rows=\"6\" required&gt;&lt;/textarea&gt;\n\n\nSend Message"
+    "text": "If you have a suggestion, a comment, a question or want to collaborate, or just want to say hello, feel free to get in touch at ian@crickles.org or using this form:\n\n \n\nName * \n\n\nEmail * \n\n\nSubject \n\n\nMessage *\n\n\n\nSend Message"
   },
   {
     "objectID": "thank-you.html",
