@@ -58,6 +58,7 @@ format:
 
 If you have a suggestion, a comment, a question or want to collaborate, or just want to say hello, feel free to get in touch at [ian@crickles.org](mailto:ian@crickles.org) or using this form:
 
+::: {=html}
 <form action="mailto:ian@crickles.org" method="post" enctype="text/plain" class="contact-form">
   <div class="form-group">
     <label for="name">Name *</label>
@@ -81,3 +82,4 @@ If you have a suggestion, a comment, a question or want to collaborate, or just 
   
   <button type="submit" class="submit-btn">Send Message</button>
 </form>
+:::
