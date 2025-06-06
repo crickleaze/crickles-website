@@ -7,32 +7,11 @@
     "text": "While you’re getting fit, stay healthy. Crickles provides unique cardiac stress analysis calculated from the activities you record on your sports devices. This helps you to compare your training load to other athletes, build an appropriate amount of recovery into your exercise program and possibly spot and analyse anomalous heart rate readings at an early stage."
   },
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Crickles",
-    "section": "",
-    "text": "Definition - ( Arch. exc. in pl.: crickles) A pre-symptomatic cardiac irregularity, detectable by ECG, caused by intense athletic activity with insufficient recovery."
-  },
-  {
-    "objectID": "index.html#crickle",
-    "href": "index.html#crickle",
-    "title": "Crickles",
-    "section": "",
-    "text": "Definition - ( Arch. exc. in pl.: crickles) A pre-symptomatic cardiac irregularity, detectable by ECG, caused by intense athletic activity with insufficient recovery."
-  },
-  {
-    "objectID": "contact.html",
-    "href": "contact.html",
+    "objectID": "contact copy.html",
+    "href": "contact copy.html",
     "title": "Contact",
     "section": "",
     "text": "If you have a suggestion, a comment, a question or want to collaborate, or just want to say hello, feel free to get in touch at ian@crickles.org or using this form:\n\n \n\nName * \n\n\nEmail * \n\n\nSubject \n\n\nMessage *\n\n\n\nSend Message"
-  },
-  {
-    "objectID": "thank-you.html",
-    "href": "thank-you.html",
-    "title": "Thank You",
-    "section": "",
-    "text": "Thanks for getting in touch. Your message has been received and we’ll get back to you.\n\n\nIf you don’t hear back soon please email me directly at ian@crickles.org.\n\n\nIan"
   },
   {
     "objectID": "sustainable.html",
@@ -68,5 +47,33 @@
     "title": "Sustainable Heart Rate Levels in Crickles",
     "section": "4 Application to individual athletes",
     "text": "4 Application to individual athletes\nThe calculation of Sustainable Heart Rate is in two steps:\n\nFor each activity where heart rate is recorded the observed maximum heart rate over each of the time windows cited above is calculated. Each of these is weighted, also as above, to convert it to an estimate of a one hour equivalent. The maximum of these is recorded as the spot_hr for that activity. The purpose of this is to use information from a number of different time windows as it is only relatively rarely that an athlete will operate at or over threshold for an hour or more.\nAt any point in time Crickles looks back to find the maximum recent spot_hr value. Recency is important as fitness, including cardiac fitness, varies seasonally and with age and a performance observed, say, a year ago may not be repeatable today. Conversely, it is necessary to look back far enough to capture any efforts that are still indicative of current fitness. The Sustainable Heart Rate calculation aims to attain a balance that captures relevantly recent activities while discarding observations as they become stale.\n\n\n4.1 Determining spot_hr\n\n\nCode\n# We create a function that calculates the maximum sustained hr over each window\n# and then converts these to an hour equivalent using the weights found above.\n\n# First, we make a function that does this given 'streams'...\nhr_windows_weighted &lt;- function(streams) {  \n  \n  # Define HR weights explicitly\n  weights &lt;- c(HR_6 = 0.913, HR_20 = 0.954, HR_40 = 0.98, HR_60 = 1)\n\n  # Safely compute sustainable HR values\n  sus_windows &lt;- possibly(hr_windows, \n                          otherwise = setNames(rep(NA_real_, length(weights)), names(weights)))(streams)\n\n  sus_windows &lt;- unlist(sus_windows)[names(weights)] \n\n  # Calculate weighted HR\n  weighted_hr &lt;- sus_windows * weights\n\n  # Find max weighted HR, handling NA\n  spot_hr &lt;- suppressWarnings(max(weighted_hr, na.rm = TRUE))\n  if (!is.finite(spot_hr)) spot_hr &lt;- NA_real_\n\n  # Find corresponding window length and extract numeric part\n  spot_window &lt;- if (!is.na(spot_hr)) {\n    names(weighted_hr)[which.max(weighted_hr)] |&gt; \n      str_remove(\"HR_\") |&gt; \n      as.numeric()\n  } else {\n    NA_real_\n  }\n\n  # Return formatted list\n  list(\n    spot_hr = round(spot_hr, 1),\n    best_window = spot_window,\n    all_weighted_hr = round(weighted_hr, 1)\n  )\n}\n\n# Then we wrap this in a function that takes an activity id...\nactivity_windows_weighted &lt;- function(act_ID) {\n  safe_fetch_streams &lt;- possibly(fetch_streams, \n                                 otherwise = NULL)\n  safe_hr_windows_weighted &lt;- possibly(hr_windows_weighted, \n                                       otherwise = list(spot_hr = NA))\n  this_streams &lt;- safe_fetch_streams(params$athlete, act_ID)\n  \n  if (is.null(this_streams)) return(NA)\n  results &lt;- safe_hr_windows_weighted(this_streams)\n  return(results$spot_hr)\n}\n\n\nAs an example, take an activity that has this heart rate chart:\n\n\nCode\nsample &lt;- fetch_streams(params$athlete, params$sample_id) \nsample |&gt;\n  mutate(minutes = time/60) |&gt;\n  ggplot(aes(x = minutes, y = heartrate)) +\n  geom_point(col = \"red\") +\n  geom_line(col = \"red3\") +\n  theme_light()\n\n\n\n\n\n\n\n\n\nWe can find the sustained heart rate over each of the time windows:\n\n\nCode\nhr_windows(sample) |&gt; unlist() |&gt; round(1)\n\n\n HR_6 HR_20 HR_40 HR_60 \n131.2 125.2 122.2 118.2 \n\n\nFor example, the value labelled HR_20 is the highest heart rate that was sustained for 20 minutes.\nUsing this information together with the equivalency weights, we calculate the spot_hr and show the time window on which this is based:\n\n\nCode\nhr_windows_weighted(sample)\n\n\n$spot_hr\n[1] 119.8\n\n$best_window\n[1] 6\n\n$all_weighted_hr\n HR_6 HR_20 HR_40 HR_60 \n119.8 119.5 119.7 118.2 \n\n\nIn this example, the short effort spike that can be seen on the chart almost half way through the activity gives us the highest estimate for the one hour sustainable heart rate so we use that.\nThe spot_hr, being the estimated sustained heart rate for each individual activity, is shown in Crickles on the Activities page as is the corresponding time window, which appears as Best_HR_Bucket.\n\n\n4.2 Sustainable Heart Rate\nFrom the history of spot_hr’s for each activity with heart rate data we need to compute a sustainable heart rate estimate for each point in time. For this, we must observe and remember the greatest recent effort, remembering that it is relatively rare for an athlete to push themselves to the limit. The way that Crickles currently composes a sustainable heart rate estimate from the history of spot_hr’s is to average the highest value from the last four weeks and the highest value from the last twelve weeks (which may be the same). The rationale for this is as follows… As fitness varies, we take the last four week period to be definitive for current fitness. On the other hand, observations taken from over twelve weeks (almost a quarter) into the past are taken to be stale from the perspective of current capability. Observations of spot_hr from between four and the twelve weeks ago can still colour the current estimate but cannot wholly define it.\nWe can illustrate this with an example.\n\n\nCode\n# sample_athlete is a dataframe of activities for one sample athlete\n# here we calculate the spot_hr for each one\nplan(multisession, workers = 8)\nsample_athlete$spot_hr &lt;- future_map_dbl(sample_athlete$ID, activity_windows_weighted) \nplan(sequential)\n\n# a bit of renaming...\nsample_athlete &lt;- sample_athlete |&gt; \n  rename(start_date_local = Date,\n         id = ID)\n\n# now we define a function to roll up sustainable hr as described\nsus_hr &lt;- function(acts) {\nacts |&gt;\n  arrange(start_date_local) |&gt;\n  mutate(date1 = ymd(as.Date(start_date_local)),\n         spot_hr_valid = ifelse(Regular == \"Regular\", spot_hr, NA)) |&gt;\n  complete(date1 = full_seq(date1, period = 1)) |&gt;\n  fill(spot_hr, spot_hr_valid) |&gt;\n  mutate(sus_hr_short = rollmax(spot_hr_valid,\n                                28,\n                                align = \"right\",\n                                na.rm = TRUE,\n                                fill = NA),\n          sus_hr_long = rollmax(spot_hr_valid,\n                                84,\n                                align = \"right\",\n                                na.rm = TRUE,\n                                fill = NA),\n          sustainable_hr = round(0.5*(sus_hr_short + sus_hr_long),1)) |&gt;\n  select(-c(date1, sus_hr_short, sus_hr_long, spot_hr_valid)) |&gt;\n  drop_na(id) |&gt;\n  arrange(desc(start_date_local)) -&gt; acts\nreturn(acts)\n}\n\n# and see how that applies to our sample athlete:\nsus_hr(sample_athlete) |&gt; \n  ggplot(aes(x = start_date_local)) +\n  geom_point(aes(y = spot_hr), col = \"grey\", alpha = 0.5) +\n  geom_line(aes(y = sustainable_hr), col = \"seagreen\") +\n  theme_light() +\n  labs(title = \"Sustainable heart rate (line) over spot_hr (points)\", \n       x = \"date\",\n       y = \"heart rate (bpm)\")\n\n\nWarning: Removed 39 rows containing missing values or values outside the scale range\n(`geom_line()`).\n\n\n\n\n\n\n\n\n\nWe can see that, while there are many different methods we could use to calculate sustainable heart rate including some that give a less stepped line, the method that we use does a good job of sitting just above the spot_hr values. Those points that lie on the green line are precisely those for activities whose heart rate intensity, shown as HRI on the Activities page, is &gt;= 1. On the Crickles Navigator Timeline page this is shown as Intensity in the tool tip for each point with heart rate data, where it is multiplied by 100 (so, for example, 90 instead of 0.9)."
+  },
+  {
+    "objectID": "thank-you.html",
+    "href": "thank-you.html",
+    "title": "Thank You",
+    "section": "",
+    "text": "Thanks for getting in touch. Your message has been received and we’ll get back to you.\n\n\nIf you don’t hear back soon please email me directly at ian@crickles.org.\n\n\nIan"
+  },
+  {
+    "objectID": "contact.html",
+    "href": "contact.html",
+    "title": "Contact",
+    "section": "",
+    "text": "Full Name\n            \n        \n        \n        \n            Email Address\n            \n        \n        \n        \n            Subject\n            \n        \n        \n        \n            Message\n            \n        \n        \n        \n            Send Message"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Crickles",
+    "section": "",
+    "text": "Definition - ( Arch. exc. in pl.: crickles) A pre-symptomatic cardiac irregularity, detectable by ECG, caused by intense athletic activity with insufficient recovery."
+  },
+  {
+    "objectID": "index.html#crickle",
+    "href": "index.html#crickle",
+    "title": "Crickles",
+    "section": "",
+    "text": "Definition - ( Arch. exc. in pl.: crickles) A pre-symptomatic cardiac irregularity, detectable by ECG, caused by intense athletic activity with insufficient recovery."
   }
 ]
