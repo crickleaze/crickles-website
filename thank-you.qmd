@@ -1,0 +1,22 @@
+---
+title: "Thank You"
+format:
+  html:
+    page-layout: full
+    toc: false
+---
+
+<style>
+.thank-you-message {
+  margin-top: 3rem;
+  font-size: 1.25rem;
+  line-height: 1.6;
+  max-width: 600px;
+}
+</style>
+
+<div class="thank-you-message">
+  <p>Thanks for getting in touch. Your message has been received and we'll get back to you.</p>
+  <p>If you don't hear back soon please email me directly at <a href="mailto:ian@crickles.org">ian@crickles.org</a>.</p>
+  <p>Ian</p>
+</div>
