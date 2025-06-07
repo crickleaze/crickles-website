@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Ian Green">
-<meta name="dcterms.date" content="2025-06-06">
+<meta name="dcterms.date" content="2025-06-07">
 
 <title>Sustainable Heart Rate Levels in Crickles – Crickles</title>
 <style>
@@ -4748,12 +4748,36 @@ vertical-align: -.125em;
 
 <style type="text/css">
 :root {
+
 --primary-dark: #2c3e50;
 --primary-medium: #34495e;
---accent-blue: #3498db;
+--accent-color: #3498db;
 --text-white: white;
 --shadow-color: rgba(0,0,0,0.1);
 --hover-bg: rgba(255,255,255,0.1);
+
+--form-bg: white;
+--form-border: #e1e5e9;
+--form-border-focus: var(--accent-color);
+--form-text: #555;
+--form-label: #555;
+--form-shadow: 0 20px 40px rgba(0,0,0,0.1);
+--form-shadow-focus: 0 0 0 3px rgba(52, 152, 219, 0.1); 
+
+--btn-gradient-start: var(--accent-color);
+--btn-gradient-end: var(--primary-medium);
+--btn-text: var(--text-white);
+--btn-shadow: 0 10px 25px rgba(52, 152, 219, 0.3); 
+
+--form-accent-start: var(--accent-color);
+--form-accent-end: var(--primary-medium);
+
+--success-bg: #d4edda;
+--success-text: #155724;
+--success-border: #c3e6cb;
+--error-bg: #f8d7da;
+--error-text: #721c24;
+--error-border: #f5c6cb;
 }
 
 .navbar {
@@ -4825,6 +4849,137 @@ padding-top: 80px !important;
 }
 .navbar-nav {
 padding: 10px 0 !important;
+}
+}</style>
+<style type="text/css">
+.contact-container {
+background: var(--form-bg);
+padding: 40px;
+border-radius: 20px;
+box-shadow: var(--form-shadow);
+max-width: 600px;
+margin: 0 auto;
+position: relative;
+overflow: hidden;
+}
+.contact-container::before {
+content: '';
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+height: 5px;
+background: linear-gradient(90deg, var(--form-accent-start), var(--form-accent-end));
+}
+.form-group {
+margin-bottom: 25px;
+}
+.form-group label {
+display: block;
+margin-bottom: 8px;
+color: var(--form-label);
+font-weight: 500;
+font-size: 0.95rem;
+}
+.form-group input, .form-group textarea {
+width: 100%;
+padding: 15px;
+border: 2px solid var(--form-border);
+border-radius: 10px;
+font-size: 1rem;
+transition: all 0.3s ease;
+font-family: inherit;
+color: var(--form-text);
+}
+.form-group input:focus, .form-group textarea:focus {
+outline: none;
+border-color: var(--form-border-focus);
+box-shadow: var(--form-shadow-focus);
+transform: translateY(-2px);
+}
+.form-group textarea {
+resize: vertical;
+min-height: 120px;
+}
+.submit-btn {
+background: linear-gradient(135deg, var(--btn-gradient-start) 0%, var(--btn-gradient-end) 100%);
+color: var(--btn-text);
+border: none;
+padding: 15px 40px;
+font-size: 1.1rem;
+border-radius: 50px;
+cursor: pointer;
+transition: all 0.3s ease;
+width: 100%;
+font-weight: 600;
+text-transform: uppercase;
+letter-spacing: 1px;
+position: relative;
+overflow: hidden;
+}
+.submit-btn:hover {
+transform: translateY(-3px);
+box-shadow: var(--btn-shadow);
+}
+.submit-btn:active {
+transform: translateY(-1px);
+}
+.submit-btn:disabled {
+opacity: 0.7;
+cursor: not-allowed;
+transform: none;
+}
+.loading {
+display: none;
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+}
+.loading::after {
+content: '';
+width: 20px;
+height: 20px;
+border: 2px solid transparent;
+border-top: 2px solid var(--btn-text);
+border-radius: 50%;
+animation: spin 1s linear infinite;
+}
+@keyframes spin {
+0% { transform: rotate(0deg); }
+100% { transform: rotate(360deg); }
+}
+.message {
+padding: 15px;
+border-radius: 10px;
+margin-bottom: 20px;
+font-weight: 500;
+text-align: center;
+opacity: 0;
+transform: translateY(-10px);
+transition: all 0.3s ease;
+}
+.message.show {
+opacity: 1;
+transform: translateY(0);
+}
+.success {
+background: var(--success-bg);
+color: var(--success-text);
+border: 1px solid var(--success-border);
+}
+.error {
+background: var(--error-bg);
+color: var(--error-text);
+border: 1px solid var(--error-border);
+}
+.hidden {
+display: none;
+}
+@media (max-width: 600px) {
+.contact-container {
+padding: 30px 20px;
+margin: 10px;
 }
 }</style>
 </head>
@@ -4918,7 +5073,7 @@ padding: 10px 0 !important;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">June 6, 2025</p>
+      <p class="date">June 7, 2025</p>
     </div>
   </div>
   

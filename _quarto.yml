@@ -27,7 +27,9 @@ format:
     theme: cosmo
     toc: true
     code-fold: true
-    css: custom-header.css
+    css: 
+      - custom-header.css
+      - contact-form.css
   
 
 

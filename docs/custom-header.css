@@ -1,11 +1,39 @@
 /* CSS Variables for colors */
 :root {
+    /* Existing variables */
     --primary-dark: #2c3e50;
     --primary-medium: #34495e;
-    --accent-blue: #3498db;
+    --accent-color: #3498db;
     --text-white: white;
     --shadow-color: rgba(0,0,0,0.1);
     --hover-bg: rgba(255,255,255,0.1);
+    
+    /* Contact form variables */
+    --form-bg: white;
+    --form-border: #e1e5e9;
+    --form-border-focus: var(--accent-color);
+    --form-text: #555;
+    --form-label: #555;
+    --form-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    --form-shadow-focus: 0 0 0 3px rgba(52, 152, 219, 0.1); /* Based on accent-color */
+    
+    /* Button gradients - you can change these to match your theme */
+    --btn-gradient-start: var(--accent-color);
+    --btn-gradient-end: var(--primary-medium);
+    --btn-text: var(--text-white);
+    --btn-shadow: 0 10px 25px rgba(52, 152, 219, 0.3); /* Based on accent-color */
+    
+    /* Form accent bar */
+    --form-accent-start: var(--accent-color);
+    --form-accent-end: var(--primary-medium);
+    
+    /* Success/Error messages */
+    --success-bg: #d4edda;
+    --success-text: #155724;
+    --success-border: #c3e6cb;
+    --error-bg: #f8d7da;
+    --error-text: #721c24;
+    --error-border: #f5c6cb;
 }
 
 /* Make Quarto navbar fixed and styled */
