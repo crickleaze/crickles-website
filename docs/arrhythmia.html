@@ -293,10 +293,6 @@ div.csl-indent {
 <p>We aimed to determine if persistent observable irregularities in the heart rate data might be more prevalent in those with a self reported history of arrhythmia. To this end we want to clean the data of readings that are wrong in uninteresting ways while discarding as little as possible that may prove useful.</p>
 <p>We begin with two measures of the regularity of the heart rate chart for any given activity. The first is <strong>stickiness</strong>. We observe (see Appendix) that sometimes the heart rate reading jams on a certain value for an implausibly long period of time. Where this happens, we believe it to be an error on the part of the recording sports device. Moreover, it is unlikely to be an <em>interesting</em> error in which the athlete’s cardiac behaviour plays any part. From the perspective of experience, we might expect that any record of a heart rate held at the same level for over a minute is wrong: while the fluctuation of, say, someone cycling at threshold in a time trial might be low, we would expect to see some change over the course of any minute. If we look at the actual record of reported sustained heart rates, there is a wide range of values; the maximum currently stands at over 37 hours! However, 95% of the range is within 90 seconds and so we take this as our threshold for reporting a probable error. Here is the distribution of values that are less than 90 seconds:</p>
 <div class="cell">
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: The dot-dot notation (`..count..`) was deprecated in ggplot2 3.4.0.
-ℹ Please use `after_stat(count)` instead.</code></pre>
-</div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -828,6 +824,10 @@ Negative Predictive Value: <strong>74.1%</strong></p>
 <h2 class="anchored" data-anchor-id="analysis-of-strap-artefacts-seen-in-heart-rate-readings">Analysis of strap artefacts seen in heart rate readings</h2>
 <p>First, we look at the maximum heart rate levels recorded for each athlete. Taking out one outlier in which a heart rate of 365 beats per minute (bpm) was recorded, we find this distribution of maximum heart rates by athlete:</p>
 <div class="cell">
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: The dot-dot notation (`..count..`) was deprecated in ggplot2 3.4.0.
+ℹ Please use `after_stat(count)` instead.</code></pre>
+</div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
