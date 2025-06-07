@@ -1,0 +1,791 @@
+---
+title: "Detecting arrhythmia from exercise data (DRAFT)"
+author: "Ian Green & Mark Dayer"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+format:
+  pdf:
+    fig-cap-location: bottom
+    keep-tex: true
+    number-sections: true
+    toc: true
+    include-in-header: 
+      text: |
+        \usepackage{float}
+  docx:
+    toc: false
+  html:
+    df-print: paged
+params:
+  acts_set: ~/crickles/definitive_files/nav file backups/acts_all_latestF
+  athlete_log: ~/crickles/definitive_files/logs/athlete_log_full.rds
+  surveys: "~/crickles/survey_responses/surveys.rds"
+bibliography: b2.bib
+execute:
+  freeze: true
+---
+
+\pagebreak
+
+```{r get_data, echo =FALSE, warning = FALSE, message = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(fig.pos = 'H')
+library(tidyverse)
+
+readRDS(params$acts_set) -> acts_all
+acts_all %>% 
+  group_by(Type) %>% 
+  tally %>% 
+  arrange(desc(n)) %>% 
+  rename(Sport = Type, Records = n) -> sports_count
+
+acts_all %>% 
+  group_by(athleteID) %>% 
+  tally %>% 
+  nrow -> athlete_count_all
+
+readRDS(params$athlete_log) %>% 
+  mutate(age = as.numeric(Sys.Date() - (as.numeric(DOB)+as.Date("1970-01-01")))/365.25) -> athlete_log
+
+youngest <- trunc(min(athlete_log$age, na.rm = T))
+oldest <- trunc(max(athlete_log$age, na.rm = T))
+median_age <- round(median(athlete_log$age, na.rm = T), 2)
+
+athlete_log %>% 
+  filter(!is.na(access_token)) %>% 
+  nrow -> athlete_count_live
+
+athlete_log %>% 
+  filter(!is.na(access_token)) %>% 
+  group_by(Sex) %>% 
+  tally %>% 
+  rename(Gender = Sex, Count = n) -> athlete_sex
+
+acts_all %>% 
+  mutate(is_hr = ifelse(!is.na(Avg_HR) & Avg_HR > 0, T, F)) -> acts_all
+acts_all %>% 
+  group_by(is_hr) %>% 
+  dplyr::summarise(count = n(), proportion = round(100 * count/nrow(acts_all),2)) %>% 
+  filter(is_hr) %>% 
+  select(proportion) %>% 
+  as.numeric -> hr_present
+
+theme_set(theme_classic())
+
+feather_dir_read <- function(filename) {
+  feather_dir <- "~/Documents/feather/"
+  feather_name <- paste0(feather_dir, filename)
+  the_file <- readRDS(feather_name)
+  return(the_file)
+}
+
+```
+# ABSTRACT
+
+## Introduction
+This study explores the feasibility of using heart rate data as frequently captured by keen amateur cyclists during exercise to detect the presence of heart rhythm problems.
+
+## Methods
+Data is gathered from an existing project that is used by over 1,000 (mainly) amateur athletes to compare the cardiac stress accrued through exercise with that of their anonymised peers. "Gappiness" in observed heart rate levels is defined and its frequent presence at the top end of the heart rate range is tested for association with athlete reports of arrhythmia obtained through a survey.
+
+## Results
+In an analysis of over 130,000 activities from 189 athletes who responded to the survey, a statistically significant association was found between observed heart rate gappiness and reported arrhythmia, both in a point-biserial correlation check (p-value = 0.005) and a logistic regression (p-value = 0.01).
+
+## Discussion
+This association has a specificity of 97.6% and a positive predictive value of 62.5%. For an athlete for whom this predicts arrhythmia it would be worthwhile to seek a medical consultation. However, the sensitivity is low so a failure to predict arrhythmia is no reassurance that there is in fact no heart rhythm issue. This is to be expected as we only know whether survey respondents report having or having ever had a heart rhythm problem. Some of those who report a problem may have been treated prior to recording the activities analysed and conversely for others the onset may have been recent so many of their recorded activities may pre-date the condition. We surmise that heart rate readings recorded using chest straps are more likely to detect arrhythmia with this method than those recorded with smart watches measuring heart rate optically at the wrist; we note that cyclists more frequently use the former and runners the latter.
+
+## Conclusion
+Heart rhythm problems are increasingly observed in people who engage in high levels of endurance sports over many years, especially cyclists. A technique that can sometimes detect arrhythmia using data already collected during sport is therefore of potential merit. Further investigation, including into the evolution of changes in gappiness before, during and after the onset of heart rhythm problems as well as the extension to a wider pool of athletes, would appear to be worthwhile.
+
+# INTRODUCTION
+
+People who regularly engage in endurance sports activities such as cycling and running accrue from them a wide range of health benefits. However, there is also increasing evidence that people, especially men, who participate in high levels of such sports over many years have an elevated likelihood of developing heart rhythm problems such as atrial fibrillation [@Case2017]; [@Centurion2019]; [@Calvo2016]. This is particularly well-documented for cyclists [@Baldesberger2008]. We may surmise, although it has no bearing on our analysis, that this could arise in part from the fact that, unlike other endurance athletes, cyclists regularly engage in sessions of high cardiac intensity lasting a number of hours during which the unfelt strain on the heart is not accompanied by a felt and fatiguing strain on skeletal muscles, owing to the mechanical advantage of being on a bike. Early diagnosis of arrhythmias is considered important and can improve clinical outcomes [@Amara2015]; [@Kirchhof2009].
+
+Increasingly wearable devices are being used to detect arrhythmias [@Perez2019]; [@Tison2018]. It is now commonly the case that keen endurance athletes will use a device such as a smart watch or a bike computer with a chest strap to measure their heart rate during exercise and record this activity on a sports website such as Strava (www.strava.com), TrainingPeaks (www.trainingpeaks.com) or Garmin Connect (https://connect.garmin.com). We hypothesized that it would be possible to detect arrhythmias by an analysis of saved heart rate data. We therefore looked for irregularities in heart rate, as detected by smartwatches and chest straps during exertion, to see whether they occured more frequently in athletes who self-reported heart rhythm problems.
+
+In observing the heart rate response of athletes wearing chest straps to effort during exercise, we note that at the highest effort heart rates increase towards the highest value, and in a hard session the heart rate will generally rise *smoothly* to the maximum value at around the time of greatest effort (studying both heart rate and power data shows that the heart rate usually lags effort by around 20 to 30 seconds).  The highest heart rate levels vary by athlete and are generally in the order of 200 beats per minute (bpm). (The rule of thumb that *maximum heart rate = 220 - age* does not account well for the seasoned athletes we have studied - see appendix, *Analysis of strap artefacts seen in heart rate readings* and also [@Tanaka2001].) However, with unexpected frequency we also sometimes observe a jumpiness at the top end of the heart rate chart. This can either be seen as a gap of a few beats per minute - say from 190 bpm to 195 bpm - or as a jump to a far higher value - say 254 bpm.
+
+It is tempting to say that these readings, especially in the latter category of large jumps to high values, are simply strap errors; and they evidently sometimes are. However, we hypothesise that they can nonetheless be informational. The chest strap is, like an ECG, continuously sampling current in the heart muscle, which it algorithmically converts into an instantaneous heart rate reading. The frequency of sampling and the algorithm for translating the electrical signal into a bpm reading are proprietary and held as secrets by equipment manufacturers. Nonetheless, we may surmise that the pattern of measured current from an athlete who is, for example, undergoing ectopic beats or exhibiting anomalous electrical activity in the heart might be expected to cause irregularity in the heart rate reported by the strap. We therefore look for such irregularities to see whether they occur more frequently in athletes who report heart rhythm problems. If they do and if we are able to establish a meaningful association, we may be able to alert athletes to seek a medical consultation as soon as such a pattern becomes evident.
+
+# METHODS
+
+## Data acquisition
+
+The data that is used in this study is from the Crickles project, whose purpose is to collect data from amateur endurance athletes and analyse the extent of "cardiac stress" accrued through activities such as cycling and running. Data from athletes who sign up to Crickles is collected from the popular website Strava.com. Athletes who wish to participate in the Crickles project enroll by hitting the *Connect with Strava* button on the website http://crickles.org. This authorises the Crickles software to access the athlete's data. Crickles then does an initial load of some years of historical data and adds the athlete to the ongoing update.
+
+Crickles performs a range of analyses on this data, the results of which are securely stored on Crickles AWS Cloud servers. Each athlete can access analysis on their own activities in comparision with the anonymised data of all other Crickles participants through the *Crickles Navigator* website http://navigator.crickles.org.
+
+Throughout this paper the term "activity" is used in the natural sense of a single, complete sport session recorded by an athlete who defines its duration by starting their sports device at the start of the session and stopping it at the end.
+
+Crickles is purely a research platform. It does not charge users, nor does it raise money by selling on users' data or in any other way. Athletes can unauthorise Crickles' access to their data at any time. Recently, Crickles users were asked to voluntarily complete a survey to facilitate the research into the detection of arrhythmias. 
+
+## Heart health Survey Questionnaire
+
+```{r surveys, echo = F, message=FALSE}
+readRDS(params$surveys) -> surveys
+
+if ("StravaID" %in% names(surveys)) {
+  surveys %>% rename(athleteID = StravaID) -> surveys
+}
+
+if ("count" %in% names(surveys)) {
+  surveys %>% select(-count) -> surveys
+}
+
+nrow(surveys) -> num_surveys_all
+
+acts_all %>% filter(athleteID %in% surveys$athleteID, is_hr) -> acts_survey
+acts_survey %>% group_by(athleteID) %>% summarise(count = n()) -> acts_count
+surveys %>% left_join(acts_count) %>% filter(count>0) -> surveys
+
+nrow(surveys) -> num_surveys_known
+```
+
+
+Crickles users were invited to complete a short questionnaire that captured information about their cardiac health. Questions include whether they have arrhythmia or diabetes, been prescribed beta blockers, experienced chest pain, fainted or had a heart attack. To date, `r num_surveys_all` athletes have completed the survey. A few of these either don't have any activities loaded by Crickles or only have activities without heart rate data; excluding those gives us `r num_surveys_known` athletes whose heart rate data we can analyse in conjunction with their heart health data.
+
+The only response that we use from the survey is to the question, *Do you have, or have you had a heart rhythm problem?*.
+
+## Analysis of the Heart Rate Data
+
+We aimed to determine if persistent observable irregularities in the heart rate data might be more prevalent in those with a self reported history of arrhythmia. To this end we want to clean the data of readings that are wrong in uninteresting ways while discarding as little as possible that may prove useful.
+
+We begin with two measures of the regularity of the heart rate chart for any given activity. The first is **stickiness**. We observe (see Appendix) that sometimes the heart rate reading jams on a certain value for an implausibly long period of time. Where this happens, we believe it to be an error on the part of the recording sports device. Moreover, it is unlikely to be an *interesting* error in which the athlete's cardiac behaviour plays any part. From the perspective of experience, we might expect that any record of a heart rate held at the same level for over a minute is wrong: while the fluctuation of, say, someone cycling at threshold in a time trial might be low, we would expect to see some change over the course of any minute. If we look at the actual record of reported sustained heart rates, there is a wide range of values; the maximum currently stands at over `r trunc(max(acts_all$max_flat_run, na.rm = TRUE)/3600)` hours! However, 95% of the range is within 90 seconds and so we take this as our threshold for reporting a probable error. Here is the distribution of values that are less than 90 seconds:
+
+```{r sticky, echo = FALSE, fig.cap="Stickiness frequency", fig.height=3, fig.width = 5, fig.pos="H",out.extra=''}
+acts_all %>% 
+  filter(max_flat_run < 90) %>% 
+  ggplot(aes(x = max_flat_run))  + 
+  geom_histogram(aes(y = ..count..), alpha = 0.4, binwidth = 1, fill = "slategrey") + 
+  geom_line(aes(y = ..count..), stat = "density", colour = "seagreen") + 
+  labs(x = "longest held heartrate (seconds)", y = "number of activities")
+```
+
+
+We call an activity in which we see a stuck heart rate value for longer than 90 seconds **sticky**. On the Crickles Navigator these activities are flagged **Check_Strap**.
+
+For our second measure, we're interested in how jumpy the heart rate chart is. This is potentially much more interesting physiologically as an erratic heart rate may well be indicative of some kind of a pathology. The study of time series volatility is an advanced science and there are many techniques that we could deploy for measurement. For example, we might use a stochastic volatility model with a jump process to fit the patterns that we see [@Zou2014]. However, the nature of athletic exercise and the limitations of the sports devices mitigate against several of these. To take some examples:
+
+1. Keen athletes quite often engage in High Intensity Interval Training (HIIT) sessions. A typical protocol might be to ride at maximum effort on a turbo trainer for 30 seconds then rest for 30 seconds then repeat, and to do this in blocks of ten repetitions with a recovery break between each block.
+2. Different sports devices record the heart rate at different sampling frequencies. Typically, a sports watch will sample infrequently at low heart rates and more frequently at high heart rates to prolong battery life. In contrast, a bike computer that records power from a power meter as well as heart rates will usually sample every second. The method that the device chooses for sampling the data is set by a combination of undocumented logic intrinsic to each device and, sometimes, configuration variables that can be set by the device owner. We do not have knowledge of either what sports device is being used or of how it is configured.
+3. All sports devices are prone to *contact failures* with the skin. It's therefore reasonably common to see wrong readings towards the start of a bike ride when a cyclist is speeding downhill; at this time with little effort and no sweat build-up and the compounding effect of a jersey flapping against a chest strap, wrong high readings are sometimes seen.
+4. As we saw above, sports devices reasonably often show high readings that are  simply higher than we believe can be correct.
+
+Points 1 and 2 present technical challenges to certain volatility models. Points 3 and 4 challenge any volatility model by the introduction of plainly wrong data; however, these phenomena, especially point 4, may potentially be responsive to electrical activity in the heart and even where the readings are numerically wrong they may carry signal value: the fact that the sports device is reporting a wrong value may itself be diagnostic! Unlike sticky readings, we therefore will not wish to discard them.
+
+Both the variable and unknown sampling regimes of devices and especially the entanglement of potentially signal-bearing errors with the true heart rate data render the use of time series volatility models problematic. Instead, we might turn to pattern matching algorithms. In principle, we could split each heart rate chart into a set of short heart rate sequences, parametrise these in some way and then use a machine learning technique to hunt for assocations with arrhythmia. While this is likely to be complex, computationally expensive and opaque, it remains open to us as a future research direction when we have a larger data set of survey responses.
+
+Here, we rely on a simpler approach. We formulate a flag for determining whether or not a heart rate chart in its entirety is erratic by introducing the concept of the *natural maximum* heart rate for an activity. This is calculated by looking for gaps in the range of observed heart rate readings over the modal value. The reasoning behind this is that at higher heart rate levels the athlete's heart rate typically steps up and down one bpm at a time, and certainly we don't normally observe discountinuities in the range of heart rates attained.
+
+If there are no such gaps the natural maximum for the activity is equal to the actual observed maximum. If there are such gaps then the natural maximum is the heart rate level immediately below the lowest such gap. We hypothesise that the gaps most likely to be indicative of arrhythmia are those that occur when the athlete is under exertion. In the course of other analysis not covered in this paper we make a running estimate of the Lactate Threshold Heart Rate (LTHR) of each athlete. (As an alternative, LTHR can be roughly approximated as a percentage of the athlete's maximum heart rate.) We call an activity for which the maximum heart rate exceeds the natural maximum and during which the athlete's heart rate also exceeds his or her prevailing LTHR **gappy**; the quality of being gappy is **gappiness**.
+
+Here's an example of a typical gappy heart rate chart:
+
+```{r gappy_chart, echo = FALSE, fig.height=3, fig.width = 5, fig.pos="H",out.extra='', fig.cap="An example of gappiness"}
+feather_dir_read("ig_2484792897.rds")  %>% 
+  ggplot(aes(x = time/60, y = heartrate)) + 
+  geom_point(colour = "darkred") + 
+  geom_hline(yintercept = 178, linetype = "dashed") + 
+  labs(x = "minutes")
+
+```
+
+Clearly, something unusual is happening for the burst in which the heart rate pops above the line, drawn at 178bpm. If we zoom in on the four minute period around the burst we see this:
+
+```{r gappy_chart_zoom, echo = FALSE, fig.height=3, fig.width = 5, fig.pos="H",out.extra='', fig.cap = "Gappiness at per second resolution"}
+feather_dir_read("ig_2484792897.rds")  %>% 
+  filter(between(time/60, 11, 15)) %>% 
+  ggplot(aes(x = time/60, y = heartrate)) + 
+  geom_point(colour = "darkred") + 
+  geom_hline(yintercept = 178, linetype = "dashed") + 
+  labs(x = "minutes")
+
+```
+
+Here, 178bpm is the *natural maximum*. We can't know whether the little spike is a faithful reading of the athlete's heart rate or a blip in the device, and, if the latter, whether or not the blip was caused by electrical cardiac activity. On its own, this incident has no medical significance. However, we have hundreds or thousands of such records for most athletes and we hypothesise that when such spikes occur with heightened frequency for an athlete it may be associated with arrhythmia.
+
+Here are a couple more examples from a different athlete:
+
+```{r gappy_chart_2more, echo = FALSE, fig.height=3, fig.width = 5, fig.pos="H",out.extra='', fig.cap = "Further examples of gappiness", warning=FALSE, message=FALSE}
+
+library(cowplot)
+feather_dir_read("nm_397067905")  %>% 
+  ggplot(aes(x = time/60, y = heartrate)) + 
+  geom_point(colour = "darkred") + 
+  geom_hline(yintercept = 179, linetype = "dashed") + 
+  labs(x = "minutes") -> x1
+
+feather_dir_read("nm_662186891")  %>% 
+  ggplot(aes(x = time/60, y = heartrate)) + 
+  geom_point(colour = "darkred") + 
+  geom_hline(yintercept = 158, linetype = "dashed") + 
+  labs(x = "minutes", y = "") -> x2
+
+plot_grid(x1, x2)
+
+```
+
+As a further filter to remove activities where we have reason to believe that gappiness is occuring due to a limitation or fault in the device, we consider also the low end of the heart rate range. By analogy with the natural maximum, we can also find the *natural minimum* heart rate for an activity: this is the level above which the observed heart rate range is complete up to the modal value. It is reasonably common to see a running activity recorded with a sports watch show a natural minimum heart rate above the actual minimum as the watch takes some seconds to catch up with the initial exertion of the athlete.
+
+Finally, here's an example where gappiness breaks out in a sequence of efforts during an interval session:
+
+```{r gappy_repeated, echo = FALSE, fig.height=3, fig.width = 5, fig.pos="H",out.extra='', fig.cap = "Repeated gappiness during intervals"}
+feather_dir_read("ph_1303558093.rds")  %>% 
+  filter(time/60 > 17) %>% 
+  ggplot(aes(x = time/60, y = heartrate)) + 
+  geom_hline(yintercept = 203, linetype = "dashed") +
+  geom_point(colour = "darkred") + 
+  labs(x = "minutes")
+
+```
+
+While gaps at the low end are logically independent and of a different character from gaps at the high end, as a precaution when an activity that is gappy at the high end is also gappy at the low end we flag it differently. Here's an example of an activity that is gappy at both ends:
+
+```{r unclear, echo = FALSE, fig.height = 3.5, fig.width = 5.5, fig.pos="H",out.extra='', fig.cap = "Example of an unclear activity"}
+
+feather_dir_read("pg_3458465076.rds") %>% 
+  ggplot(aes(x = time/60, y = heartrate)) +
+  geom_point(colour = "darkred") +
+  geom_hline(yintercept = 149, linetype = "dashed") + 
+  geom_hline(yintercept = 178, linetype = "dashed") +
+  labs(x = "minutes") 
+
+
+```
+
+
+Activities that are not sticky and that are gappy at the high end but not at the low end are flagged as **irregular**. Gappy non-sticky activities that are gappy at both the high and the low ends are marked as **unclear**.
+
+Activities that are neither sticky (flagged as *Check_Strap*), irregular or unclear are marked as **regular**. Whereas a volatility metric or a machine learning algorithm could give us a *degree* of irregularity for an activity, this methodology simply tells us *whether or not* an activity appears irregular. We rely on the frequency of such readings to give us a continuous measure for an athlete.
+
+This table gives an indication of the frequency of incidence of these phenomena:
+
+```{r gappy_stick, echo = F, message = FALSE}
+
+library(knitr)
+acts_all %>% filter(is_hr, !is.na(Regular)) -> acts_hr
+acts_hr %>% 
+  group_by(Regular) %>% 
+  summarise(count = n(), percentage = round(100 * count/nrow(acts_hr), 1)) %>% 
+  rename(Category = Regular) %>% 
+  arrange(desc(percentage)) %>% 
+  kable(caption = "Regularity - counts and percentages", format.args = list(big.mark = ","))
+
+```
+
+The category of any particular activity carries low informational value. However, we believe that when aggregated by athlete there is scope for significance to arise. On a prosaic level, when the proportion of an athlete's activities that report Check_Strap rises well above the population average we can propose that it may be time to consider getting a new strap (or relevant sports device).
+
+The more interesting questions arise from an exploration of supra-normal frequencies of activities flagged as irregular.
+
+First we make a detour to consider the sport(s) that will be the focus for the remainder of this analysis.
+
+## Focus on cycling and chest straps
+
+We would like to restrict our study to cyclists using chest straps. Selecting only cyclists is straightforward; we can also include cyclists using turbo trainers and those on platforms such as Zwift that offer "virtual rides". Selecting only activities in which a chest strap was used is more problematic. This is because it is possible for an athlete to use one device to collect and record the data and another to measure the heart rate. For example, when using a Garmin Forerunner sports watch the heart rate can be measured either from the in-built optical heart rate monitor or from a chest strap. Likewise, while most cyclists using a bike computer will measure their heart rate (if they do so at all) using a chest strap, it is nonetheless possible for them to use a sports watch for the purpose and to connect the two using bluetooth. From the data available to us, even though we can sometimes find the name of one "device" that was used on an activity, we have no failsafe way of knowing which device was used to record the heart rate. For example, in an extreme case in which a cyclist on a Taxc Neo turbo trainer records a ride on the software platform Zwift using a Wahoo Elemnt bike computer and measures his or her heart rate with a Garmin Forerunner watch, four "devices" are being used and we know, at best, the name of only one of them, and it probably won't be the Forerunner.
+
+There are, though, *de facto* correlations between exercise types and equipment. Looking only at runs, rides and virtual rides and classifying each device into a "device family", we analysed the frequency of use on a random sample of over 10,000 activities:
+
+``` {r devices}
+
+feather_dir_read("devices_sample.rds") %>% filter(!is.na(device)) %>% 
+  mutate(device_family = case_when(
+    str_detect(str_to_lower(device), "apple watch|forerunner|suunto|polar|vívoactive|fēnix") ~ "watch",
+    str_detect(str_to_lower(device), "edge|elemnt") ~ "bike_computer",
+    str_detect(str_to_lower(device), "tacx|wattbike") ~ "trainer",
+    str_detect(str_to_lower(device), "zwift|sufferfest|roadgrandtours|rouvy|trainer road") ~ "platform",
+    str_detect(str_to_lower(device), "android|iphone") ~ "phone")) -> devices
+devices %>% filter(Type %in% c("Ride", "VirtualRide", "Run"), !is.na(device_family)) %>%
+  group_by(device_family, Type) %>% 
+  tally() %>% 
+  pivot_wider(names_from = Type, values_from = n, values_fill = 0) %>% 
+  kable(caption = "Sample count by device family and sport", format.args = list(big.mark = ","))
+
+```
+
+We see that in this sample, the large majority of cyclists on non-virtual rides used bike computers, almost all runners used sports watches and most virtual rides took place on platforms such as Zwift or Trainer Road. Even though we don't know how many of the runners also used chest straps as well as sports watches or how many of the cyclists took heart rate readings from a watch, we believe that the use of chest straps is more prevalent than watches for heart rate recording amongst cyclists as it would be duplicative, inconvenient and of little obvious benefit to use both a bike computer and a sports watch at the same time. Furthermore, as keen cyclists ourselves, this is what the authors consistently observe.
+
+More information on the use of various types of device is supplied in the appendix, *Analysis of device by sport*.
+
+```{r just_ride, echo = F}
+
+acts_hr %>% filter(Type %in% c("Ride", "VirtualRide")) -> acts_rides
+
+acts_rides %>% group_by(athleteID, Regular) %>% 
+    tally %>% 
+    pivot_wider(names_from = Regular, values_from = n, values_fill = list(n = 0)) %>% 
+    mutate(present = Regular + Irregular + Unclear + Check_Strap,
+           strap_ratio = 100 * Check_Strap / present,
+           irreg_ratio = 100 * Irregular / (Irregular + Regular),
+           unclear_ratio = 100 * (Irregular + Unclear)/(Irregular + Unclear + Regular)) %>% 
+    select(athleteID, present:unclear_ratio) -> reg_ratios
+
+```
+
+
+## Unreliable straps
+
+The table above showed us the overall proportion of activities that are flagged with Check_Strap. When we break this down to find the ratio for each athlete and plot the distribution of ratios we get this:
+
+```{r strap_athlete, fig.height = 3, fig.width = 5, fig.cap = "Frequency of 'Check Strap'", fig.pos="H",out.extra=''}
+
+reg_ratios %>% ggplot(aes(x = strap_ratio)) + 
+  geom_density() + 
+  geom_vline(xintercept = 15, linetype = "dashed") + 
+  labs(x = "Check_Strap ratio", y = "proportion of athletes")
+
+```
+
+There is a non-normal distribution of values with a median of `r round(median(reg_ratios$strap_ratio),2)`% and a mean of `r round(mean(reg_ratios$strap_ratio),2)`%. The distribution falls monotonically from the mode until about 15%, which we have marked with a dotted line. We hypthosise that the athletes represented by ratios to the right of the line are likely to be repeatedly exercising with sports devices (possibly chest straps) that are consistently not working. We therefore removed these athletes from our sample.
+
+```{r no_crap, echo = F}
+
+reg_ratios %>% filter(strap_ratio < 15) -> no_crap
+acts_rides %>% filter(athleteID %in% no_crap$athleteID) -> acts_no_crap
+
+```
+
+Paring down to only cycling activities for which we have heart rate data and removing the higher-error athletes still leaves us with `r nrow(no_crap)` athletes and `r format(nrow(acts_no_crap), big.mark = ",")` activities. Next, we have to restrict our focus much further.
+
+# RESULTS
+
+## Irregularity and arrhythmia
+
+Is frequency of **irregular** activities associated with a diagnosis of arrhythmia in cyclists? To answer that question we need to:
+
+1. calculate the ratio of activities marked as **irregular** for each cyclist in our reduced population;
+2. find those for whom we have a survey response - this is a large reduction in data;
+3. test the association strength between each athlete's *irregular ratio* and the presence/absence of an arrhythmia diagnosis.
+
+Steps 1 and 2 are simply data manipulation. Since we don't believe sticky activities to be informational and we're uncertain about unclear ones, we set our *irregular ratio* to be the proportion of activities marked *irregular* of those marked either *irregular* or *regular*.
+
+```{r survey_irregular, message=FALSE, warning = F}
+
+# minimal_acceptable_sample <- 20
+
+acts_no_crap %>% filter(athleteID %in% surveys$athleteID) %>% 
+    group_by(athleteID, Regular) %>% 
+    tally %>% 
+    # filter(n >= minimal_acceptable_sample) %>% 
+    pivot_wider(names_from = Regular, values_from = n, values_fill = list(n = 0)) %>% 
+    mutate(present = Regular + Irregular + Unclear + Check_Strap,
+           strap_ratio = 100 * Check_Strap / present,
+           irreg_ratio = 100 * Irregular / (Irregular + Regular),
+           unclear_ratio = 100 * (Irregular + Unclear)/(Irregular + Unclear + Regular)) %>% 
+    select(athleteID, present:unclear_ratio) -> results
+
+# get rid of surveys without Arrhythmia response
+surveys %>% filter(Arrhythmia != "None") -> surveys
+  
+inner_join(surveys, results) %>% 
+  filter(present > 0) %>% 
+  mutate(arr_num = ifelse(Arrhythmia == "Yes", 1, 0), bb_num = ifelse(Betablocker == "Yes", 1, 0),
+          as.factor(Arrhythmia) -> Arrhythmia) -> survey_results
+
+```
+At this point we have reduced our survey population down to `r nrow(survey_results)` athletes. Of these, `r survey_results %>% filter(Arrhythmia == "Yes") %>% nrow` (`r round(100 * (survey_results %>% filter(Arrhythmia == "Yes") %>% nrow) / nrow(survey_results), 1)`%) report having an arrhythmia diagnosis. This is a high percentage, which we can attribute to a strong selection bias amongst those who choose to complete the survey.
+
+The distribution of irregular ratios is shown by a Shapiro test to be significantly non-normal, which is not surprising. 
+
+We can compare the irregular ratios for athletes with and without arrhythmia:
+
+```{r irreg_chart, fig.height = 3, fig.width = 5, fig.cap = "A violin plot comparing irregular ratios for athletes with and without arrhythmia", fig.pos="H",out.extra=''}
+
+survey_results %>% 
+  ggplot(aes(x = Arrhythmia, y = irreg_ratio)) + 
+  geom_violin() + 
+  geom_jitter(width = 0.2,aes(colour = Arrhythmia)) +
+  labs(y = "irregular ratio", x = "arrhythmia", colour = "arrhythmia")
+
+```
+
+The non-arrhythmics tend to clump on the low ratios whereas the arrhythmics have a higher proportion of elevated values.
+
+As a first check of whether this is supported statistically, we can run a point-biserial correlation check; here *arr_num* is 1 for athletes who have a diagnosis of arrhythmia and 0 for those who don't:
+
+```{r biserial_cor}
+
+cor.test(survey_results$irreg_ratio, survey_results$arr_num) -> c_test
+library(pander)
+print(c_test)
+
+```
+
+The p-value of **`r round(c_test$p.value,3)`** suggests that the correlation of **`r round(100*c_test$estimate,1)`%** represents a meaningful association whose probability of being due to chance is low.
+
+We can explore this further with a logistic regression:
+
+```{r logit_reg, results = 'asis'}
+
+as.factor(survey_results$Arrhythmia) -> survey_results$Arrhythmia
+glm(data = survey_results, Arrhythmia ~ irreg_ratio, family = binomial) -> lr_model
+pander(lr_model)
+
+# library(finalfit)
+# library(knitr)
+# survey_results %>%
+#   finalfit("Arrhythmia","irreg_ratio", dependent_label_prefix = "") %>%
+#   select(-6) %>%
+#   kable(caption = "Logistic regression, summary statistics")
+
+```
+
+Again, the low p-value of **`r round(coef(summary(lr_model))[,4][2],3)`** for irreg_ratio indicates a significant relationship.
+
+Re-running the violin plot using the fitted values from the logistic regression model rather than the observed irregular ratios preserves the pattern of the chart above:
+
+```{r prediction_chart, fig.height = 3, fig.width = 5, fig.pos="H",out.extra='', fig.cap = "Modelled likelihood of arrhythmia by athlete's own report"}
+
+survey_results %>% mutate(predicted = predict(lr_model, ., type = "response")) %>% 
+  ggplot(aes(x = Arrhythmia, y = predicted)) + 
+  geom_violin() + 
+  geom_jitter(width = 0.2,aes(colour = Arrhythmia)) +
+  labs(y = "predicted likelihood", x = "arrhythmia", colour = "arrhythmia")
+
+```
+  
+Now we can apply the model to all of the athletes for whom we have heart rate data from cycling but no survey response:
+
+```{r prediction}
+acts_no_crap %>% 
+  filter(!athleteID %in% survey_results$athleteID) %>% 
+  group_by(athleteID, Regular) %>% 
+  tally %>% 
+  pivot_wider(names_from = Regular, values_from = n, values_fill = list(n = 0)) %>% 
+  mutate(irreg_ratio = 100 * Irregular / (Irregular + Regular)) %>% 
+  ungroup %>% 
+  mutate(pred_prob = predict(lr_model, ., type = "response"),
+          predicted_arrhythmia = ifelse(pred_prob >= 0.5, T, F)) %>% 
+  filter(!is.na(predicted_arrhythmia)) %>% 
+  group_by(predicted_arrhythmia) %>% tally -> predict_table
+
+kable(predict_table, caption = "Arrhythmia prediction for athletes with no survey response", longtable = FALSE)
+```
+
+This predicts that `r round(100 * predict_table$n[2]/(predict_table$n[1] + predict_table$n[2]), 1)`% of our population would have arrhythmia as gauged by the irregular ratio.
+
+## Confusion matrix and the utility of the prediction
+
+The quality of fit of the logistic regression can be assessed in headline terms by comparing the fitted probabilities of arrhythmia with the actual values:
+
+```{r fit}
+
+survey_results %>% mutate(predicted = predict(lr_model, ., type = "response")) %>% 
+  mutate(prediction = ifelse(predicted >= 0.5, "Predict Yes", "Predict No")) %>% 
+  group_by(Arrhythmia, prediction) %>% 
+  tally -> confusion
+
+correct_guesses <- confusion$n[1] + confusion$n[4]
+cases <- sum(confusion$n)
+correct_ratio = round(100 * correct_guesses / cases, 1)
+actual_no <- confusion$n[1] + confusion$n[2]
+guess_no_ratio <- round(100 * actual_no / cases, 1)
+PPV <- round(100 * confusion$n[4] / (confusion$n[4] + confusion$n[2]), 1)
+NPV <- round(100 * confusion$n[1] / (confusion$n[1] + confusion$n[3]), 1)
+sensitivity <- round(100 * confusion$n[4] / (confusion$n[4] + confusion$n[3]), 1)
+specificity <- round(100 * confusion$n[1] / (confusion$n[1] + confusion$n[2]), 1)
+
+
+confusion %>% pivot_wider(names_from = prediction, values_from = n) -> conf_matrix
+
+kable(conf_matrix, caption = "Confusion matrix for logistic regression")
+
+```
+
+Sensitivity: **`r sensitivity`%**  
+Specificity: **`r specificity`%**  
+Positive Predictive Value: **`r PPV`%**  
+Negative Predictive Value: **`r NPV`%**
+
+Here, *Predict No* simply means the modelled probability is <= 0.5 and *Predict Yes* means it's over 0.5.
+
+## Irregularity, Unclarity and Stickiness
+
+We have made a number of important assumptions regarding our gappiness and stickiness measures, notably that stickiness is unlikely to be of physiological interest whereas gappiness is our central measure of suspicion. We therefore would hope to find that there is no meaningful correlation between the two.
+
+If we run a correlation test on the irregular_ratio and the strap_ratio we get the following:
+
+```{r irregular_strap, echo= FALSE}
+
+cor.test(results$irreg_ratio, results$strap_ratio) -> cor_test_irreg_strap
+pander(cor_test_irreg_strap)
+```
+  
+The correlation is weak at `r round(100*cor_test_irreg_strap$estimate,1)`% and the p-value of `r round(cor_test_irreg_strap$p.value,3)` indicates that we cannot reject the null hypothesis (no correlation).
+
+In contrast, and as we would expect, the irregularity ratio is highly correlated with the ratio of Unclears:
+
+```{r unclear_strap, echo= FALSE}
+
+cor.test(results$irreg_ratio, results$unclear_ratio) -> cor_test_irreg_unclear
+pander(cor_test_irreg_unclear)
+
+```
+
+This suggests that we may, perhaps, be over-cautious in removing unclear activities from our analysis (including them does not change the results materially.)
+
+# DISCUSSION
+
+In summary we have demonstrated that using simple algorithms it may be possible to screen cyclists for the presence or absence of an arrhythmia. However, it was far from perfect with current technology. Improvements in the ability of devices to record heart rate and ECGs, as well as a bigger database of activities and subjects with and without arrhythmia is likely to mean that algorithms developed in the future can be expected to improve the ability to detect problems early, leading to earlier treatment. 
+
+There are many limitations to our data. Firstly, we were unaware of the type of arrhythmia that our subjects suffered from, and whether it was an ongoing problem or a frequent problem, and whether/how episodes of arrhythmia coincided with the timeframe over which we have the subject's exercise data. Atrial fibrillation, probably the most common “serious” rhythm problem that afflicts cyclists and other endurance athletes, can be a problem that surfaces rarely or be something that is consistent. A change in medication or a procedure can also change its frequency or severity. It is also possible that people who have a heart rhythm problem avoid exercise on days when it is occurring or avoid particular forms of exercise. Furthermore, some rhythm problems cause only very fleeting interruptions in the ECG trace and would not be detected by our methodology (for example ventricular ectopics).  Some rhythm problems become less frequent with exercise. These are reasons, perhaps, for the relatively poor sensitivity. 
+
+## Simplicity
+
+A strength and a weakness of the algorithm for generating the irregular ratio is its simplicity. Given that we have hundreds of thousands of activity records from hundreds of athletes and typically thousands or tens of thousands of heart rate observations for each activity, it might be expected that a machine learning algorithm would perform better. Over time, this may be so but for so long as we only have a relatively small number of survey responses and the issue of identifying errors when sports devices have mis-parsed a heart rate signal remains entangled with the difficulty of true pattern detection, a simple algorithm that offers good heuristics is advantageous. It also helps that it is fast and easy to calculate.
+
+## Limitations
+
+As well as shortcomings in the mathematical model, there are intrinsic limitations in the data. Notably, there are likely to be athletes who have responded to our survey and who correctly report that they have not being diagnosed with arrhythmia but who nonetheless have it.
+
+We made a number of assumptions regarding our gappiness and stickiness, notably that stickiness is unlikely to be of physiological interest whereas gappiness is our central measure of suspicion. We confirmed, however, that there was no correlation between the two. 
+
+If we had further details about subjects' arrhythmias, it also would enable us to study the temporal pattern of the irregularity ratio, which, in the context of a date of onset or diagnosis, might be expected to be fruitful. For example, in the table given in the Confusion matrix section above we observed a relatively large number of cases where a survey response disclosed arrhythmia that was not predicted by the model. At least some of these may be due to remedial measures such as medication and/or reduction of exercise intensity consequent to diagnosis but pre-dating the collection of many or all activities.
+
+# CONCLUSION
+
+In this study we have found that in a population of around 100 very active cyclists, a high frequency with which gaps appear at the top end of the heart rate range is associated with heart rhythm problems. In some instances the heart rates reported are higher than is medically plausible. We surmise that, even when lacking fidelity to the true heart rate, readings from a chest strap may be informational in signalling erratic electrial cardiac activity. Where this is observed, it may prove a useful alert to the subject to seek a medical consultation to check for arrhythmia. On the other hand, the absence of such a pattern does not, on the basis of the present analysis, reassure the subject that there is no arrhythmia.
+
+This merits further investigation, for example to: analyse changes in irregularity ratio over time for athletes with a known medical history; compare more sports; compare types of heart rate monitor, including those that read a pulse optically at the wrist; apply alternative irregularity detection techniques, including techniques that result in a continuous regularity metric; extend to a wider pool of athletes.
+
+# APPENDICES
+
+## Data available
+
+At the time of writing, `r athlete_count_all` athletes have at some point authorised Crickles to access their data and of these `r athlete_count_live` currently remain authorised and are thus available for this study. The gender breakdown of the authorised athletes is as follows:
+
+```{r gender = "asis", echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+kable(athlete_sex, caption = "Athletes by gender")
+
+```
+
+The youngest athlete is `r youngest` years old, the eldest is `r oldest` years old and the median age is `r median_age`.
+
+From these athletes, we have analysed `r format(nrow(acts_all), big.mark=",")` activities, which arise from `r nrow(sports_count)` different sports. The activity counts for the ten most heavily represented sports are as follows:
+
+```{r sports = "asis", echo = FALSE, message = FALSE, warning=FALSE}
+library(tidyverse)
+
+top_n(sports_count, 10, Records) -> sports_table
+kable(sports_table, format.args = list(big.mark = ","), caption = "Activity county of top ten sports")
+
+```
+
+Many, but not all, of these activities are saved with heart rate readings recorded by the sports device throughout the activity. In fact, the proportion of activities that have heart rate data currently stands at `r hr_present`%. When estimating cardiac stress, in the absence of heart rate data we can use statistical models based on factors such as speed, power and gradient as a proxy; however, for the purposes of this paper we only use those activities for which we have heart rate data.
+
+## Analysis of strap artefacts seen in heart rate readings
+
+First, we look at the maximum heart rate levels recorded for each athlete. Taking out one outlier in which a heart rate of 365 beats per minute (bpm) was recorded, we find this distribution of maximum heart rates by athlete:
+
+```{r max_hr, echo = F, message = FALSE}
+
+acts_all %>% 
+  filter(is_hr, ID != "914357702") %>% 
+  group_by(athleteID) %>% 
+  summarise(maxhr = max(Max_HR, na.rm = T)) -> hr_max
+
+round(100 * length(hr_max$athleteID[hr_max$maxhr>=240])/nrow(hr_max),1) -> hr_240
+```
+
+``` {r max_hr_chart,fig.height = 3, fig.width = 5, fig.cap = "Maximum heart rates", fig.pos="H",out.extra=''}
+hr_max %>% ggplot(aes(x = maxhr))  +                       
+  geom_histogram(alpha = 0.6, binwidth = 1)+   
+  geom_line(aes(y = ..count..), colour = 'blue', stat = 'density')+
+  labs(x = "maximum heart rate", y = "athlete count")
+
+```
+
+If the traditional estimate *maximum heart rate = 220 - age* had any relevance to our population we might, remembering the age of our youngest athlete, expect the distribution to end at around `r 220 - youngest`bpm. This clearly does not happen. In fact, beyond an initial peak that perhaps indicates high valid, if unexpected, values for a fit cohort, we have a second peak above 240 bpm and `r hr_240`% of our athletes record a maximum heart rate of 240bpm or more.
+
+Every possible value between 173bpm and 255bpm for maximum heart rate is found for at least one athlete.  With the single outlier exception, the distribution comes to a hard stop at 255bpm. 
+
+On medical and observational grounds, we do not believe that hundreds of athletes are genuinely attaining heart rates that are this high. Rather we attribute it to sporadic mis-recording by the sports devices used to capture heart rates.
+
+Nor is this the only kind of error seen in the heart rate data. Here's an example of a heart rate chart taken from an athlete activity:
+
+```{r sticky_1, echo = FALSE, fig.height = 3.5, fig.width = 5.5,  fig.cap = "Extreme example of a sticky heart rate", fig.pos="H",out.extra=''}
+feather_dir_read("ig_2701392489.rds") %>% 
+  ggplot(aes(x = time/60, y = heartrate)) +
+  geom_line(colour = "darkred") +
+  labs(x = "minutes")
+
+```
+
+Clearly, this is not a true picture of the athlete's heart rate!
+
+It can be more subtle. Take this example:
+
+```{r sticky_2, echo = FALSE, message = FALSE, warning=FALSE, fig.height = 3.5, fig.width = 5.5, fig.pos="H",out.extra='', fig.cap = "Subtler case of stickiness"}
+
+library(cowplot)
+feather_dir_read("ig_2609813388.rds") %>% 
+  ggplot(aes(x = time/60, y = heartrate)) +
+  geom_line(colour = "darkred") +
+  labs(x = "") -> p1
+feather_dir_read("ig_2609813388.rds") %>% 
+  filter(between(time/60, 150, 180)) %>%
+  ggplot(aes(x = time/60, y = heartrate)) +
+  geom_line(colour = "darkred") +
+  labs(x = "minutes") -> p2
+plot_grid(p1, p2, ncol = 1)
+
+```
+
+At a first glance, the top chart looks normal. However, if we zoom in, as we do on the lower chart, we can see a couple of sections where the reported heart rate is flatlining at a constant level. In fact, it twice reports a constant level for over two minutes. Again, such flatlining occurences are physiologically highly implausible yet frequently seen in the data, even though on longer activities, such as a three hour bike ride, a couple of minutes of flatlining might not be visually evident on a chart on a website.
+
+## Analysis of device by sport
+
+``` {r device_stats, message = FALSE}
+devices %>% group_by(device) %>% tally %>% nrow -> num_devices
+devices %>% filter(Type == "Run", device_family == "bike_computer") %>% nrow -> run_computer
+```
+
+We saw above that we took a sample of over 10,000 activities and analysed the usage by sport, device and device family. In this sample, `r num_devices` different devices were found.
+
+For our purposes, the single most significant difference amongst those devices that measure heart rate lies between those that measure the heart rate using electrical sensors near to the heart and those that measure the pulse optically, typically at the wrist. Studies appear to show that the former are generally more reliable [REF]. A related factor is the frequency with which the heart rate is sampled by the device. This is a function not only of the device itself but often also of how it is configured by the user. For example, a bike computer that is being used to capture readings from a power meter as well as a heart rate monitor will usually sample data second by second. On the other hand, running watches will often adjust the sampling frequency dynamically in order to preserve battery life. We also need to remember that because of the interoperability between devices and the fact that we only have one device name (at most) per activity, we only know (at best) the device used to *record* the heart rate, and we can't necessarily always strictly deduce from that how the heart rate was *measured*.
+
+We studied the differences between devices by taking the mean time between readings for each activity and then finding the median of these times by device. This gives us the following:
+
+``` {r device_meandiff}
+
+devices %>% filter(Type %in% c("Ride", "VirtualRide", "Run"), !is.na(device_family)) %>%
+  group_by(device_family, Type) %>% 
+  summarise(mdf = round(median(meanDiff, na.rm = T),1)) %>% 
+  pivot_wider(names_from = Type, values_from = mdf) -> temp
+kable(temp, caption = "Average heart rate sampling frequency in seconds")
+```
+
+As expected, bike computers used by cyclists have a much lower median time between readings than watches used by runners. Virtual rides and rides using a platform or a trainer are very frequently also measuring power and plugged into a mains supply and it is therefore no surprise to see that they do second by second sampling.
+
+Runs using a bike computer are rare - there were only `r run_computer` in this sample.
+
+Infrequent sampling may be a factor behind a phenomenon often reported by users of sports watches: the heart rate readings they show tend to lag the actual heart rate. There are countless instances of this being reported anecodotally, sometimes by athletes wearing a sports watch and using a bike computer at the same time specifically to confirm the phenomenon, but as far as we are aware this has not been studied systematically.
+
+Insofar as sports watches are laggier than straps, this is most likely to be observed at low heart rates and at the start of activities when the heart rate is increasing from a relatively rested state. At the high end, the heart is unlikely to be able to increase dramatically and in any case the sampling algorithm is likely to have responed to the elevated heart rate and to set sampling to a greater frequency. Even so, it is to eliminate gappiness due to lagged readings that we correlate arrhythmia with the proportion of *irregular* activities rather than the proportion of all gappy readings, also including *unclear* activities.
+
+Our beliefs about the differences between the operation of sports watches and chest straps lead us to two expectations:
+
+1. Since we believe that watches are laggier than chest straps, we expect that the unclear ratio for watches will be higher than for straps;  
+2. Since we postulate that irregularity - gappiness only at the high end of the range - is in part due to electrical cardiac phenomema, we expect that the irregular ratio for straps will be higher than for watches.  
+
+Both of these expectations are borne out in our sample:
+
+``` {r device_ratios, message = FALSE, warning=FALSE}
+devices %>% left_join( acts_hr[,c("ID", "Regular")]) %>% 
+  filter(Type %in% c("Ride", "VirtualRide", "Run"), !is.na(device_family)) %>%
+  group_by(device_family, Regular) %>% 
+  tally %>% 
+  pivot_wider(names_from = Regular, values_from = n, values_fill = 0) %>% 
+  transmute(irreg_ratio = round(100 * Irregular/(Irregular+Regular+Unclear),1), 
+            strap_ratio = round(100*Check_Strap/(Check_Strap + Irregular + Regular + Unclear),1),
+            unclear_ratio = round(100 * Unclear/(Irregular+Regular+Unclear),1)) %>% 
+  kable(caption = "Regularity percentages by device family")
+
+```
+
+While we would have liked to have been able to select only activities for which we know that heart rate readings were taken from a chest strap, we were unable to do so for the reasons explained above and we believe that selecting only cycling activities in fact achieves this to an acceptable extent.
+
+## Residuals
+
+In addition to the results shown above, we can analyse leverage and residuals to evaluate the logistic regression model.
+
+```{r residuals}
+knitr::opts_chunk$set(echo = FALSE)
+
+survey_results %>% transmute(leverage = hatvalues(lr_model), 
+                          student_residuals = rstudent(lr_model)) -> residuals
+
+expected_leverage <- 2/nrow(survey_results)
+large_residuals <- residuals %>% filter(abs(student_residuals) > 1.96) %>% nrow
+v_large_residuals <- residuals %>% filter(abs(student_residuals) > 2.58) %>% nrow
+```
+
+The expected leverage is `r expected_leverage` and should lie between 0 and 1. The actual values lie between `r min(residuals$leverage)` and `r max(residuals$leverage)`.
+
+We would expect to see ~5% of the residuals (numerically = `r 0.05 * nrow(residuals)`) have absolute size greater than 1.96; in fact, we see `r large_residuals`. Likewise, we would expect to see ~1% of the residuals (numerically = `r 0.01 * nrow(residuals)`) have absolute size greater than 2.58; in fact, we see `r v_large_residuals`.
+
+## Data sufficiency
+
+Even after we whittled down our initial population of hundreds of thousands of activities to those with heart rate data from rides conducted by survey respondents, we are still left with `r sum(survey_results$present)` activities. These are satisfactorily spread amongst arrhythmics and non-arrhythmics: the distribution of numbers of filtered activities for the former is:
+
+```{r data_arr}
+summary(survey_results$present[survey_results$Arrhythmia == "Yes"]) %>% pander()
+```
+
+and for the latter:
+
+```{r data_non-arr}
+summary(survey_results$present[survey_results$Arrhythmia == "No"]) %>% pander()
+```
+
+## Other survey questions
+
+As stated above, the heart health survey captures a number of data points from respondents. Of these, the only question whose response we consider in this analysis is *Do you have, or have you had, a heart rhythym problem?* The relationship between answers to all of the questions in the survey can be illustrated with an UpSet plot:
+
+``` {r upset plot, echo = FALSE}
+
+# note this doesn't look at diabetes atm
+ library(UpSetR)
+  
+  readRDS(params$surveys) %>% 
+    mutate(Betablocker = ifelse(is.na(Betablocker), 0, Betablocker)) %>% 
+    transmute(betablocker = ifelse(Betablocker == "Yes", 1, 0),
+      heart_attack = ifelse(str_detect(HeartAttack,"Yes"), 1, 0),
+      chest_pain = ifelse(ChestPain == "Yes", 1, 0),
+      arrhythmia = ifelse(Arrhythmia == "Yes", 1, 0),
+      fainting = ifelse(Fainting %in% c("Yes, I have fainted more than once","Yes, I have fainted once"), 1, 0),
+      other_info = ifelse(!is.na(OtherInfo) & !str_to_lower(OtherInfo) %in% c("none", "no", ""), 1, 0)) %>% 
+    as.data.frame -> surveys_upset  
+    UpSetR::upset(surveys_upset, nsets = 6, order.by = "freq", sets.bar.color = "seagreen", main.bar.color = "dodgerblue4", text.scale = 1)
+
+```
+
+The green bars indicate how many affirmative responses were given to each question. For example, the bottom two bars tell us that `r sum(surveys_upset$arrhythmia)` respondents reported arrhythmia and `r sum(surveys_upset$other_info)` supplied other information (in free-form text). The heights of the blue columns, also given numerically, encode the intersection size of affirmative responses as indicated by the black dots. For example, the first column shows that 24 respondents gave extra information while reporting none of the five symptoms. Also, if we sum across the columns for which "other info" is given and arrhythmia is also reported we find that there are `r surveys_upset %>% transmute(both = ifelse(arrhythmia == 1 & other_info == 1, 1, 0)) %>% filter(both == 1) %>% nrow()` such responses.
+
+In future, especially if we have a much larger data set, it may be fruitful to examine the other symptoms and the free format "other information" for potential explanatory significance.
+
+## Out of sample test
+
+Since the original draft of this paper was written the number of survey responses has increased and it is now more feasible to hold back a testing set from the sample of surveys. Apportioning 75% of our surveys for training and the rest for testing generates the following confusion matrix on the test set:
+
+\newpage
+
+``` {r test_train, echo = FALSE, message = FALSE, warning = FALSE}
+
+library(tidymodels)
+# set.seed(123456)
+set.seed(100)
+initial_split(survey_results, strata = Arrhythmia) -> surveys_split
+recipe(Arrhythmia ~ irreg_ratio, data = survey_results) -> s_recipe
+logistic_reg() %>% set_engine("glm") %>% set_mode("classification") -> s_model
+workflow() %>% add_recipe(s_recipe) %>% add_model(s_model) -> s_workflow
+s_workflow %>% last_fit(surveys_split) -> s_fit
+s_fit %>% collect_metrics() -> s_performance
+s_fit %>% collect_predictions %>% conf_mat(truth = Arrhythmia, estimate = .pred_class) -> conf_matrix
+
+conf_matrix$table[1,1] -> TN
+conf_matrix$table[1,2] -> FN
+conf_matrix$table[2,1] -> FP
+conf_matrix$table[2,2] -> TP
+s_sensitivity <- round(100 * TP/(TP+FN), 1)
+s_specificity <- round(100 * TN/(TN+FP), 1)
+s_PPV <- round(100 * TP/(TP+FP), 1)
+s_NPV <- round(100 * TN/(TN+FN), 1)
+
+as.data.frame(t(conf_matrix$table)) %>% 
+  mutate(Prediction = paste("Predict", Prediction)) %>% 
+  rename(Arrhythmia = Truth) %>% 
+  pivot_wider(names_from = Prediction, values_from = Freq) %>%
+  kable(caption = "Confusion matrix for an out of sample test set")
+```
+
+Sensitivity: **`r s_sensitivity`%**  
+Specificity: **`r s_specificity`%**  
+Positive Predictive Value: **`r s_PPV`%**  
+Negative Predictive Value: **`r s_NPV`%**
+
+# ACKNOWLEDGEMENTS
+
+The authors would like to thank Stephen Mildenhall of St John's University, New York and Mike Bradley of Credit Suisse for helpful review input.
+
+# REFERENCES
+

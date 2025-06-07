@@ -12,6 +12,8 @@ editor: visual
 params:
   athlete: 320170
   sample_id: "13038162852"
+execute:
+  freeze: true  
 ---
 
 ## Introduction

@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.40">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Ian Green &amp; Mark Dayer">
+<meta name="dcterms.date" content="2025-06-07">
+
+<title>Detecting arrhythmia from exercise data (DRAFT) – Crickles</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./favicon.ico" rel="icon">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-6bd9cfa162949bde0a231f530c97869d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<link href="site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet">
+<script src="site_libs/pagedtable-1.1/js/pagedtable.js"></script>
+
+
+<link rel="stylesheet" href="custom-header.css">
+<link rel="stylesheet" href="contact-form.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Crickles</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./app.html"> 
+<span class="menu-text">Navigator</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-research" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Research</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-research">    
+        <li>
+    <a class="dropdown-item" href="./sustainable.html">
+ <span class="dropdown-text">Sustainable Performance</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./arrhythmia.html">
+ <span class="dropdown-text">Detecting Arrhythmia</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="./about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./contact.html"> 
+<span class="menu-text">Contact</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#abstract" id="toc-abstract" class="nav-link active" data-scroll-target="#abstract">ABSTRACT</a>
+  <ul class="collapse">
+  <li><a href="#introduction" id="toc-introduction" class="nav-link" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods">Methods</a></li>
+  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a></li>
+  <li><a href="#discussion" id="toc-discussion" class="nav-link" data-scroll-target="#discussion">Discussion</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul></li>
+  <li><a href="#introduction-1" id="toc-introduction-1" class="nav-link" data-scroll-target="#introduction-1">INTRODUCTION</a></li>
+  <li><a href="#methods-1" id="toc-methods-1" class="nav-link" data-scroll-target="#methods-1">METHODS</a>
+  <ul class="collapse">
+  <li><a href="#data-acquisition" id="toc-data-acquisition" class="nav-link" data-scroll-target="#data-acquisition">Data acquisition</a></li>
+  <li><a href="#heart-health-survey-questionnaire" id="toc-heart-health-survey-questionnaire" class="nav-link" data-scroll-target="#heart-health-survey-questionnaire">Heart health Survey Questionnaire</a></li>
+  <li><a href="#analysis-of-the-heart-rate-data" id="toc-analysis-of-the-heart-rate-data" class="nav-link" data-scroll-target="#analysis-of-the-heart-rate-data">Analysis of the Heart Rate Data</a></li>
+  <li><a href="#focus-on-cycling-and-chest-straps" id="toc-focus-on-cycling-and-chest-straps" class="nav-link" data-scroll-target="#focus-on-cycling-and-chest-straps">Focus on cycling and chest straps</a></li>
+  <li><a href="#unreliable-straps" id="toc-unreliable-straps" class="nav-link" data-scroll-target="#unreliable-straps">Unreliable straps</a></li>
+  </ul></li>
+  <li><a href="#results-1" id="toc-results-1" class="nav-link" data-scroll-target="#results-1">RESULTS</a>
+  <ul class="collapse">
+  <li><a href="#irregularity-and-arrhythmia" id="toc-irregularity-and-arrhythmia" class="nav-link" data-scroll-target="#irregularity-and-arrhythmia">Irregularity and arrhythmia</a></li>
+  <li><a href="#confusion-matrix-and-the-utility-of-the-prediction" id="toc-confusion-matrix-and-the-utility-of-the-prediction" class="nav-link" data-scroll-target="#confusion-matrix-and-the-utility-of-the-prediction">Confusion matrix and the utility of the prediction</a></li>
+  <li><a href="#irregularity-unclarity-and-stickiness" id="toc-irregularity-unclarity-and-stickiness" class="nav-link" data-scroll-target="#irregularity-unclarity-and-stickiness">Irregularity, Unclarity and Stickiness</a></li>
+  </ul></li>
+  <li><a href="#discussion-1" id="toc-discussion-1" class="nav-link" data-scroll-target="#discussion-1">DISCUSSION</a>
+  <ul class="collapse">
+  <li><a href="#simplicity" id="toc-simplicity" class="nav-link" data-scroll-target="#simplicity">Simplicity</a></li>
+  <li><a href="#limitations" id="toc-limitations" class="nav-link" data-scroll-target="#limitations">Limitations</a></li>
+  </ul></li>
+  <li><a href="#conclusion-1" id="toc-conclusion-1" class="nav-link" data-scroll-target="#conclusion-1">CONCLUSION</a></li>
+  <li><a href="#appendices" id="toc-appendices" class="nav-link" data-scroll-target="#appendices">APPENDICES</a>
+  <ul class="collapse">
+  <li><a href="#data-available" id="toc-data-available" class="nav-link" data-scroll-target="#data-available">Data available</a></li>
+  <li><a href="#analysis-of-strap-artefacts-seen-in-heart-rate-readings" id="toc-analysis-of-strap-artefacts-seen-in-heart-rate-readings" class="nav-link" data-scroll-target="#analysis-of-strap-artefacts-seen-in-heart-rate-readings">Analysis of strap artefacts seen in heart rate readings</a></li>
+  <li><a href="#analysis-of-device-by-sport" id="toc-analysis-of-device-by-sport" class="nav-link" data-scroll-target="#analysis-of-device-by-sport">Analysis of device by sport</a></li>
+  <li><a href="#residuals" id="toc-residuals" class="nav-link" data-scroll-target="#residuals">Residuals</a></li>
+  <li><a href="#data-sufficiency" id="toc-data-sufficiency" class="nav-link" data-scroll-target="#data-sufficiency">Data sufficiency</a></li>
+  <li><a href="#other-survey-questions" id="toc-other-survey-questions" class="nav-link" data-scroll-target="#other-survey-questions">Other survey questions</a></li>
+  <li><a href="#out-of-sample-test" id="toc-out-of-sample-test" class="nav-link" data-scroll-target="#out-of-sample-test">Out of sample test</a></li>
+  </ul></li>
+  <li><a href="#acknowledgements" id="toc-acknowledgements" class="nav-link" data-scroll-target="#acknowledgements">ACKNOWLEDGEMENTS</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">REFERENCES</a></li>
+  </ul>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="arrhythmia.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li><li><a href="arrhythmia.docx"><i class="bi bi-file-word"></i>MS Word</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Detecting arrhythmia from exercise data (DRAFT)</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Ian Green &amp; Mark Dayer </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">June 7, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div style="page-break-after: always;"></div>
+<section id="abstract" class="level1">
+<h1>ABSTRACT</h1>
+<section id="introduction" class="level2">
+<h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
+<p>This study explores the feasibility of using heart rate data as frequently captured by keen amateur cyclists during exercise to detect the presence of heart rhythm problems.</p>
+</section>
+<section id="methods" class="level2">
+<h2 class="anchored" data-anchor-id="methods">Methods</h2>
+<p>Data is gathered from an existing project that is used by over 1,000 (mainly) amateur athletes to compare the cardiac stress accrued through exercise with that of their anonymised peers. “Gappiness” in observed heart rate levels is defined and its frequent presence at the top end of the heart rate range is tested for association with athlete reports of arrhythmia obtained through a survey.</p>
+</section>
+<section id="results" class="level2">
+<h2 class="anchored" data-anchor-id="results">Results</h2>
+<p>In an analysis of over 130,000 activities from 189 athletes who responded to the survey, a statistically significant association was found between observed heart rate gappiness and reported arrhythmia, both in a point-biserial correlation check (p-value = 0.005) and a logistic regression (p-value = 0.01).</p>
+</section>
+<section id="discussion" class="level2">
+<h2 class="anchored" data-anchor-id="discussion">Discussion</h2>
+<p>This association has a specificity of 97.6% and a positive predictive value of 62.5%. For an athlete for whom this predicts arrhythmia it would be worthwhile to seek a medical consultation. However, the sensitivity is low so a failure to predict arrhythmia is no reassurance that there is in fact no heart rhythm issue. This is to be expected as we only know whether survey respondents report having or having ever had a heart rhythm problem. Some of those who report a problem may have been treated prior to recording the activities analysed and conversely for others the onset may have been recent so many of their recorded activities may pre-date the condition. We surmise that heart rate readings recorded using chest straps are more likely to detect arrhythmia with this method than those recorded with smart watches measuring heart rate optically at the wrist; we note that cyclists more frequently use the former and runners the latter.</p>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>Heart rhythm problems are increasingly observed in people who engage in high levels of endurance sports over many years, especially cyclists. A technique that can sometimes detect arrhythmia using data already collected during sport is therefore of potential merit. Further investigation, including into the evolution of changes in gappiness before, during and after the onset of heart rhythm problems as well as the extension to a wider pool of athletes, would appear to be worthwhile.</p>
+</section>
+</section>
+<section id="introduction-1" class="level1">
+<h1>INTRODUCTION</h1>
+<p>People who regularly engage in endurance sports activities such as cycling and running accrue from them a wide range of health benefits. However, there is also increasing evidence that people, especially men, who participate in high levels of such sports over many years have an elevated likelihood of developing heart rhythm problems such as atrial fibrillation <span class="citation" data-cites="Case2017">(<a href="#ref-Case2017" role="doc-biblioref">Christoper Case 2017</a>)</span>; <span class="citation" data-cites="Centurion2019">(<a href="#ref-Centurion2019" role="doc-biblioref">Centurión 2019</a>)</span>; <span class="citation" data-cites="Calvo2016">(<a href="#ref-Calvo2016" role="doc-biblioref">Calvo 2016</a>)</span>. This is particularly well-documented for cyclists <span class="citation" data-cites="Baldesberger2008">(<a href="#ref-Baldesberger2008" role="doc-biblioref">Baldesberger 2008</a>)</span>. We may surmise, although it has no bearing on our analysis, that this could arise in part from the fact that, unlike other endurance athletes, cyclists regularly engage in sessions of high cardiac intensity lasting a number of hours during which the unfelt strain on the heart is not accompanied by a felt and fatiguing strain on skeletal muscles, owing to the mechanical advantage of being on a bike. Early diagnosis of arrhythmias is considered important and can improve clinical outcomes <span class="citation" data-cites="Amara2015">(<a href="#ref-Amara2015" role="doc-biblioref">Amara 2015</a>)</span>; <span class="citation" data-cites="Kirchhof2009">(<a href="#ref-Kirchhof2009" role="doc-biblioref">Kirchhof 2009</a>)</span>.</p>
+<p>Increasingly wearable devices are being used to detect arrhythmias <span class="citation" data-cites="Perez2019">(<a href="#ref-Perez2019" role="doc-biblioref">Marco V. Perez 2019</a>)</span>; <span class="citation" data-cites="Tison2018">(<a href="#ref-Tison2018" role="doc-biblioref">Tison et al. 2018</a>)</span>. It is now commonly the case that keen endurance athletes will use a device such as a smart watch or a bike computer with a chest strap to measure their heart rate during exercise and record this activity on a sports website such as Strava (www.strava.com), TrainingPeaks (www.trainingpeaks.com) or Garmin Connect (https://connect.garmin.com). We hypothesized that it would be possible to detect arrhythmias by an analysis of saved heart rate data. We therefore looked for irregularities in heart rate, as detected by smartwatches and chest straps during exertion, to see whether they occured more frequently in athletes who self-reported heart rhythm problems.</p>
+<p>In observing the heart rate response of athletes wearing chest straps to effort during exercise, we note that at the highest effort heart rates increase towards the highest value, and in a hard session the heart rate will generally rise <em>smoothly</em> to the maximum value at around the time of greatest effort (studying both heart rate and power data shows that the heart rate usually lags effort by around 20 to 30 seconds). The highest heart rate levels vary by athlete and are generally in the order of 200 beats per minute (bpm). (The rule of thumb that <em>maximum heart rate = 220 - age</em> does not account well for the seasoned athletes we have studied - see appendix, <em>Analysis of strap artefacts seen in heart rate readings</em> and also <span class="citation" data-cites="Tanaka2001">(<a href="#ref-Tanaka2001" role="doc-biblioref">Hirofumi Tanaka 2001</a>)</span>.) However, with unexpected frequency we also sometimes observe a jumpiness at the top end of the heart rate chart. This can either be seen as a gap of a few beats per minute - say from 190 bpm to 195 bpm - or as a jump to a far higher value - say 254 bpm.</p>
+<p>It is tempting to say that these readings, especially in the latter category of large jumps to high values, are simply strap errors; and they evidently sometimes are. However, we hypothesise that they can nonetheless be informational. The chest strap is, like an ECG, continuously sampling current in the heart muscle, which it algorithmically converts into an instantaneous heart rate reading. The frequency of sampling and the algorithm for translating the electrical signal into a bpm reading are proprietary and held as secrets by equipment manufacturers. Nonetheless, we may surmise that the pattern of measured current from an athlete who is, for example, undergoing ectopic beats or exhibiting anomalous electrical activity in the heart might be expected to cause irregularity in the heart rate reported by the strap. We therefore look for such irregularities to see whether they occur more frequently in athletes who report heart rhythm problems. If they do and if we are able to establish a meaningful association, we may be able to alert athletes to seek a medical consultation as soon as such a pattern becomes evident.</p>
+</section>
+<section id="methods-1" class="level1">
+<h1>METHODS</h1>
+<section id="data-acquisition" class="level2">
+<h2 class="anchored" data-anchor-id="data-acquisition">Data acquisition</h2>
+<p>The data that is used in this study is from the Crickles project, whose purpose is to collect data from amateur endurance athletes and analyse the extent of “cardiac stress” accrued through activities such as cycling and running. Data from athletes who sign up to Crickles is collected from the popular website Strava.com. Athletes who wish to participate in the Crickles project enroll by hitting the <em>Connect with Strava</em> button on the website http://crickles.org. This authorises the Crickles software to access the athlete’s data. Crickles then does an initial load of some years of historical data and adds the athlete to the ongoing update.</p>
+<p>Crickles performs a range of analyses on this data, the results of which are securely stored on Crickles AWS Cloud servers. Each athlete can access analysis on their own activities in comparision with the anonymised data of all other Crickles participants through the <em>Crickles Navigator</em> website http://navigator.crickles.org.</p>
+<p>Throughout this paper the term “activity” is used in the natural sense of a single, complete sport session recorded by an athlete who defines its duration by starting their sports device at the start of the session and stopping it at the end.</p>
+<p>Crickles is purely a research platform. It does not charge users, nor does it raise money by selling on users’ data or in any other way. Athletes can unauthorise Crickles’ access to their data at any time. Recently, Crickles users were asked to voluntarily complete a survey to facilitate the research into the detection of arrhythmias.</p>
+</section>
+<section id="heart-health-survey-questionnaire" class="level2">
+<h2 class="anchored" data-anchor-id="heart-health-survey-questionnaire">Heart health Survey Questionnaire</h2>
+<p>Crickles users were invited to complete a short questionnaire that captured information about their cardiac health. Questions include whether they have arrhythmia or diabetes, been prescribed beta blockers, experienced chest pain, fainted or had a heart attack. To date, 236 athletes have completed the survey. A few of these either don’t have any activities loaded by Crickles or only have activities without heart rate data; excluding those gives us 228 athletes whose heart rate data we can analyse in conjunction with their heart health data.</p>
+<p>The only response that we use from the survey is to the question, <em>Do you have, or have you had a heart rhythm problem?</em>.</p>
+</section>
+<section id="analysis-of-the-heart-rate-data" class="level2">
+<h2 class="anchored" data-anchor-id="analysis-of-the-heart-rate-data">Analysis of the Heart Rate Data</h2>
+<p>We aimed to determine if persistent observable irregularities in the heart rate data might be more prevalent in those with a self reported history of arrhythmia. To this end we want to clean the data of readings that are wrong in uninteresting ways while discarding as little as possible that may prove useful.</p>
+<p>We begin with two measures of the regularity of the heart rate chart for any given activity. The first is <strong>stickiness</strong>. We observe (see Appendix) that sometimes the heart rate reading jams on a certain value for an implausibly long period of time. Where this happens, we believe it to be an error on the part of the recording sports device. Moreover, it is unlikely to be an <em>interesting</em> error in which the athlete’s cardiac behaviour plays any part. From the perspective of experience, we might expect that any record of a heart rate held at the same level for over a minute is wrong: while the fluctuation of, say, someone cycling at threshold in a time trial might be low, we would expect to see some change over the course of any minute. If we look at the actual record of reported sustained heart rates, there is a wide range of values; the maximum currently stands at over 37 hours! However, 95% of the range is within 90 seconds and so we take this as our threshold for reporting a probable error. Here is the distribution of values that are less than 90 seconds:</p>
+<div class="cell">
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: The dot-dot notation (`..count..`) was deprecated in ggplot2 3.4.0.
+ℹ Please use `after_stat(count)` instead.</code></pre>
+</div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arrhythmia_files/figure-html/sticky-1.png" class="img-fluid figure-img" width="480"></p>
+<figcaption>Stickiness frequency</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>We call an activity in which we see a stuck heart rate value for longer than 90 seconds <strong>sticky</strong>. On the Crickles Navigator these activities are flagged <strong>Check_Strap</strong>.</p>
+<p>For our second measure, we’re interested in how jumpy the heart rate chart is. This is potentially much more interesting physiologically as an erratic heart rate may well be indicative of some kind of a pathology. The study of time series volatility is an advanced science and there are many techniques that we could deploy for measurement. For example, we might use a stochastic volatility model with a jump process to fit the patterns that we see <span class="citation" data-cites="Zou2014">(<a href="#ref-Zou2014" role="doc-biblioref">Zou 2014</a>)</span>. However, the nature of athletic exercise and the limitations of the sports devices mitigate against several of these. To take some examples:</p>
+<ol type="1">
+<li>Keen athletes quite often engage in High Intensity Interval Training (HIIT) sessions. A typical protocol might be to ride at maximum effort on a turbo trainer for 30 seconds then rest for 30 seconds then repeat, and to do this in blocks of ten repetitions with a recovery break between each block.</li>
+<li>Different sports devices record the heart rate at different sampling frequencies. Typically, a sports watch will sample infrequently at low heart rates and more frequently at high heart rates to prolong battery life. In contrast, a bike computer that records power from a power meter as well as heart rates will usually sample every second. The method that the device chooses for sampling the data is set by a combination of undocumented logic intrinsic to each device and, sometimes, configuration variables that can be set by the device owner. We do not have knowledge of either what sports device is being used or of how it is configured.</li>
+<li>All sports devices are prone to <em>contact failures</em> with the skin. It’s therefore reasonably common to see wrong readings towards the start of a bike ride when a cyclist is speeding downhill; at this time with little effort and no sweat build-up and the compounding effect of a jersey flapping against a chest strap, wrong high readings are sometimes seen.</li>
+<li>As we saw above, sports devices reasonably often show high readings that are simply higher than we believe can be correct.</li>
+</ol>
+<p>Points 1 and 2 present technical challenges to certain volatility models. Points 3 and 4 challenge any volatility model by the introduction of plainly wrong data; however, these phenomena, especially point 4, may potentially be responsive to electrical activity in the heart and even where the readings are numerically wrong they may carry signal value: the fact that the sports device is reporting a wrong value may itself be diagnostic! Unlike sticky readings, we therefore will not wish to discard them.</p>
+<p>Both the variable and unknown sampling regimes of devices and especially the entanglement of potentially signal-bearing errors with the true heart rate data render the use of time series volatility models problematic. Instead, we might turn to pattern matching algorithms. In principle, we could split each heart rate chart into a set of short heart rate sequences, parametrise these in some way and then use a machine learning technique to hunt for assocations with arrhythmia. While this is likely to be complex, computationally expensive and opaque, it remains open to us as a future research direction when we have a larger data set of survey responses.</p>
+<p>Here, we rely on a simpler approach. We formulate a flag for determining whether or not a heart rate chart in its entirety is erratic by introducing the concept of the <em>natural maximum</em> heart rate for an activity. This is calculated by looking for gaps in the range of observed heart rate readings over the modal value. The reasoning behind this is that at higher heart rate levels the athlete’s heart rate typically steps up and down one bpm at a time, and certainly we don’t normally observe discountinuities in the range of heart rates attained.</p>
+<p>If there are no such gaps the natural maximum for the activity is equal to the actual observed maximum. If there are such gaps then the natural maximum is the heart rate level immediately below the lowest such gap. We hypothesise that the gaps most likely to be indicative of arrhythmia are those that occur when the athlete is under exertion. In the course of other analysis not covered in this paper we make a running estimate of the Lactate Threshold Heart Rate (LTHR) of each athlete. (As an alternative, LTHR can be roughly approximated as a percentage of the athlete’s maximum heart rate.) We call an activity for which the maximum heart rate exceeds the natural maximum and during which the athlete’s heart rate also exceeds his or her prevailing LTHR <strong>gappy</strong>; the quality of being gappy is <strong>gappiness</strong>.</p>
+<p>Here’s an example of a typical gappy heart rate chart:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arrhythmia_files/figure-html/gappy_chart-1.png" class="img-fluid figure-img" width="480"></p>
+<figcaption>An example of gappiness</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Clearly, something unusual is happening for the burst in which the heart rate pops above the line, drawn at 178bpm. If we zoom in on the four minute period around the burst we see this:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arrhythmia_files/figure-html/gappy_chart_zoom-1.png" class="img-fluid figure-img" width="480"></p>
+<figcaption>Gappiness at per second resolution</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Here, 178bpm is the <em>natural maximum</em>. We can’t know whether the little spike is a faithful reading of the athlete’s heart rate or a blip in the device, and, if the latter, whether or not the blip was caused by electrical cardiac activity. On its own, this incident has no medical significance. However, we have hundreds or thousands of such records for most athletes and we hypothesise that when such spikes occur with heightened frequency for an athlete it may be associated with arrhythmia.</p>
+<p>Here are a couple more examples from a different athlete:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arrhythmia_files/figure-html/gappy_chart_2more-1.png" class="img-fluid figure-img" width="480"></p>
+<figcaption>Further examples of gappiness</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>As a further filter to remove activities where we have reason to believe that gappiness is occuring due to a limitation or fault in the device, we consider also the low end of the heart rate range. By analogy with the natural maximum, we can also find the <em>natural minimum</em> heart rate for an activity: this is the level above which the observed heart rate range is complete up to the modal value. It is reasonably common to see a running activity recorded with a sports watch show a natural minimum heart rate above the actual minimum as the watch takes some seconds to catch up with the initial exertion of the athlete.</p>
+<p>Finally, here’s an example where gappiness breaks out in a sequence of efforts during an interval session:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arrhythmia_files/figure-html/gappy_repeated-1.png" class="img-fluid figure-img" width="480"></p>
+<figcaption>Repeated gappiness during intervals</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>While gaps at the low end are logically independent and of a different character from gaps at the high end, as a precaution when an activity that is gappy at the high end is also gappy at the low end we flag it differently. Here’s an example of an activity that is gappy at both ends:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arrhythmia_files/figure-html/unclear-1.png" class="img-fluid figure-img" width="528"></p>
+<figcaption>Example of an unclear activity</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Activities that are not sticky and that are gappy at the high end but not at the low end are flagged as <strong>irregular</strong>. Gappy non-sticky activities that are gappy at both the high and the low ends are marked as <strong>unclear</strong>.</p>
+<p>Activities that are neither sticky (flagged as <em>Check_Strap</em>), irregular or unclear are marked as <strong>regular</strong>. Whereas a volatility metric or a machine learning algorithm could give us a <em>degree</em> of irregularity for an activity, this methodology simply tells us <em>whether or not</em> an activity appears irregular. We rely on the frequency of such readings to give us a continuous measure for an athlete.</p>
+<p>This table gives an indication of the frequency of incidence of these phenomena:</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Regularity - counts and percentages</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Category</th>
+<th style="text-align: right;">count</th>
+<th style="text-align: right;">percentage</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Regular</td>
+<td style="text-align: right;">1,204,160</td>
+<td style="text-align: right;">86.4</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Unclear</td>
+<td style="text-align: right;">91,817</td>
+<td style="text-align: right;">6.6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Check_Strap</td>
+<td style="text-align: right;">72,984</td>
+<td style="text-align: right;">5.2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Irregular</td>
+<td style="text-align: right;">25,267</td>
+<td style="text-align: right;">1.8</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The category of any particular activity carries low informational value. However, we believe that when aggregated by athlete there is scope for significance to arise. On a prosaic level, when the proportion of an athlete’s activities that report Check_Strap rises well above the population average we can propose that it may be time to consider getting a new strap (or relevant sports device).</p>
+<p>The more interesting questions arise from an exploration of supra-normal frequencies of activities flagged as irregular.</p>
+<p>First we make a detour to consider the sport(s) that will be the focus for the remainder of this analysis.</p>
+</section>
+<section id="focus-on-cycling-and-chest-straps" class="level2">
+<h2 class="anchored" data-anchor-id="focus-on-cycling-and-chest-straps">Focus on cycling and chest straps</h2>
+<p>We would like to restrict our study to cyclists using chest straps. Selecting only cyclists is straightforward; we can also include cyclists using turbo trainers and those on platforms such as Zwift that offer “virtual rides”. Selecting only activities in which a chest strap was used is more problematic. This is because it is possible for an athlete to use one device to collect and record the data and another to measure the heart rate. For example, when using a Garmin Forerunner sports watch the heart rate can be measured either from the in-built optical heart rate monitor or from a chest strap. Likewise, while most cyclists using a bike computer will measure their heart rate (if they do so at all) using a chest strap, it is nonetheless possible for them to use a sports watch for the purpose and to connect the two using bluetooth. From the data available to us, even though we can sometimes find the name of one “device” that was used on an activity, we have no failsafe way of knowing which device was used to record the heart rate. For example, in an extreme case in which a cyclist on a Taxc Neo turbo trainer records a ride on the software platform Zwift using a Wahoo Elemnt bike computer and measures his or her heart rate with a Garmin Forerunner watch, four “devices” are being used and we know, at best, the name of only one of them, and it probably won’t be the Forerunner.</p>
+<p>There are, though, <em>de facto</em> correlations between exercise types and equipment. Looking only at runs, rides and virtual rides and classifying each device into a “device family”, we analysed the frequency of use on a random sample of over 10,000 activities:</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Sample count by device family and sport</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">device_family</th>
+<th style="text-align: right;">Ride</th>
+<th style="text-align: right;">Run</th>
+<th style="text-align: right;">VirtualRide</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">bike_computer</td>
+<td style="text-align: right;">5,945</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">15</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">phone</td>
+<td style="text-align: right;">214</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">platform</td>
+<td style="text-align: right;">121</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1,446</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">trainer</td>
+<td style="text-align: right;">116</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">16</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">watch</td>
+<td style="text-align: right;">770</td>
+<td style="text-align: right;">897</td>
+<td style="text-align: right;">10</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>We see that in this sample, the large majority of cyclists on non-virtual rides used bike computers, almost all runners used sports watches and most virtual rides took place on platforms such as Zwift or Trainer Road. Even though we don’t know how many of the runners also used chest straps as well as sports watches or how many of the cyclists took heart rate readings from a watch, we believe that the use of chest straps is more prevalent than watches for heart rate recording amongst cyclists as it would be duplicative, inconvenient and of little obvious benefit to use both a bike computer and a sports watch at the same time. Furthermore, as keen cyclists ourselves, this is what the authors consistently observe.</p>
+<p>More information on the use of various types of device is supplied in the appendix, <em>Analysis of device by sport</em>.</p>
+</section>
+<section id="unreliable-straps" class="level2">
+<h2 class="anchored" data-anchor-id="unreliable-straps">Unreliable straps</h2>
+<p>The table above showed us the overall proportion of activities that are flagged with Check_Strap. When we break this down to find the ratio for each athlete and plot the distribution of ratios we get this:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arrhythmia_files/figure-html/strap_athlete-1.png" class="img-fluid figure-img" width="480"></p>
+<figcaption>Frequency of ‘Check Strap’</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>There is a non-normal distribution of values with a median of 3.94% and a mean of 6.85%. The distribution falls monotonically from the mode until about 15%, which we have marked with a dotted line. We hypthosise that the athletes represented by ratios to the right of the line are likely to be repeatedly exercising with sports devices (possibly chest straps) that are consistently not working. We therefore removed these athletes from our sample.</p>
+<p>Paring down to only cycling activities for which we have heart rate data and removing the higher-error athletes still leaves us with 1085 athletes and 813,633 activities. Next, we have to restrict our focus much further.</p>
+</section>
+</section>
+<section id="results-1" class="level1">
+<h1>RESULTS</h1>
+<section id="irregularity-and-arrhythmia" class="level2">
+<h2 class="anchored" data-anchor-id="irregularity-and-arrhythmia">Irregularity and arrhythmia</h2>
+<p>Is frequency of <strong>irregular</strong> activities associated with a diagnosis of arrhythmia in cyclists? To answer that question we need to:</p>
+<ol type="1">
+<li>calculate the ratio of activities marked as <strong>irregular</strong> for each cyclist in our reduced population;</li>
+<li>find those for whom we have a survey response - this is a large reduction in data;</li>
+<li>test the association strength between each athlete’s <em>irregular ratio</em> and the presence/absence of an arrhythmia diagnosis.</li>
+</ol>
+<p>Steps 1 and 2 are simply data manipulation. Since we don’t believe sticky activities to be informational and we’re uncertain about unclear ones, we set our <em>irregular ratio</em> to be the proportion of activities marked <em>irregular</em> of those marked either <em>irregular</em> or <em>regular</em>.</p>
+<p>At this point we have reduced our survey population down to 212 athletes. Of these, 60 (28.3%) report having an arrhythmia diagnosis. This is a high percentage, which we can attribute to a strong selection bias amongst those who choose to complete the survey.</p>
+<p>The distribution of irregular ratios is shown by a Shapiro test to be significantly non-normal, which is not surprising.</p>
+<p>We can compare the irregular ratios for athletes with and without arrhythmia:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arrhythmia_files/figure-html/irreg_chart-1.png" class="img-fluid figure-img" width="480"></p>
+<figcaption>A violin plot comparing irregular ratios for athletes with and without arrhythmia</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The non-arrhythmics tend to clump on the low ratios whereas the arrhythmics have a higher proportion of elevated values.</p>
+<p>As a first check of whether this is supported statistically, we can run a point-biserial correlation check; here <em>arr_num</em> is 1 for athletes who have a diagnosis of arrhythmia and 0 for those who don’t:</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Pearson's product-moment correlation
+
+data:  survey_results$irreg_ratio and survey_results$arr_num
+t = 4.0299, df = 210, p-value = 7.801e-05
+alternative hypothesis: true correlation is not equal to 0
+95 percent confidence interval:
+ 0.1381621 0.3886412
+sample estimates:
+      cor 
+0.2679231 </code></pre>
+</div>
+</div>
+<p>The p-value of <strong>0</strong> suggests that the correlation of <strong>26.8%</strong> represents a meaningful association whose probability of being due to chance is low.</p>
+<p>We can explore this further with a logistic regression:</p>
+<table class="caption-top table">
+<caption>Fitting generalized (binomial/logit) linear model: Arrhythmia ~ irreg_ratio</caption>
+<colgroup>
+<col style="width: 25%">
+<col style="width: 15%">
+<col style="width: 18%">
+<col style="width: 13%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">&nbsp;</th>
+<th style="text-align: center;">Estimate</th>
+<th style="text-align: center;">Std. Error</th>
+<th style="text-align: center;">z value</th>
+<th style="text-align: center;">Pr(&gt;|z|)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><strong>(Intercept)</strong></td>
+<td style="text-align: center;">-1.409</td>
+<td style="text-align: center;">0.2107</td>
+<td style="text-align: center;">-6.688</td>
+<td style="text-align: center;">2.267e-11</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong>irreg_ratio</strong></td>
+<td style="text-align: center;">0.146</td>
+<td style="text-align: center;">0.04202</td>
+<td style="text-align: center;">3.475</td>
+<td style="text-align: center;">0.0005105</td>
+</tr>
+</tbody>
+</table>
+<p>Again, the low p-value of <strong>0.001</strong> for irreg_ratio indicates a significant relationship.</p>
+<p>Re-running the violin plot using the fitted values from the logistic regression model rather than the observed irregular ratios preserves the pattern of the chart above:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arrhythmia_files/figure-html/prediction_chart-1.png" class="img-fluid figure-img" width="480"></p>
+<figcaption>Modelled likelihood of arrhythmia by athlete’s own report</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Now we can apply the model to all of the athletes for whom we have heart rate data from cycling but no survey response:</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Arrhythmia prediction for athletes with no survey response</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">predicted_arrhythmia</th>
+<th style="text-align: right;">n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">849</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">TRUE</td>
+<td style="text-align: right;">23</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>This predicts that 2.6% of our population would have arrhythmia as gauged by the irregular ratio.</p>
+</section>
+<section id="confusion-matrix-and-the-utility-of-the-prediction" class="level2">
+<h2 class="anchored" data-anchor-id="confusion-matrix-and-the-utility-of-the-prediction">Confusion matrix and the utility of the prediction</h2>
+<p>The quality of fit of the logistic regression can be assessed in headline terms by comparing the fitted probabilities of arrhythmia with the actual values:</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Confusion matrix for logistic regression</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Arrhythmia</th>
+<th style="text-align: right;">Predict No</th>
+<th style="text-align: right;">Predict Yes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">No</td>
+<td style="text-align: right;">146</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Yes</td>
+<td style="text-align: right;">51</td>
+<td style="text-align: right;">9</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Sensitivity: <strong>15%</strong><br>
+Specificity: <strong>96.1%</strong><br>
+Positive Predictive Value: <strong>60%</strong><br>
+Negative Predictive Value: <strong>74.1%</strong></p>
+<p>Here, <em>Predict No</em> simply means the modelled probability is &lt;= 0.5 and <em>Predict Yes</em> means it’s over 0.5.</p>
+</section>
+<section id="irregularity-unclarity-and-stickiness" class="level2">
+<h2 class="anchored" data-anchor-id="irregularity-unclarity-and-stickiness">Irregularity, Unclarity and Stickiness</h2>
+<p>We have made a number of important assumptions regarding our gappiness and stickiness measures, notably that stickiness is unlikely to be of physiological interest whereas gappiness is our central measure of suspicion. We therefore would hope to find that there is no meaningful correlation between the two.</p>
+<p>If we run a correlation test on the irregular_ratio and the strap_ratio we get the following:</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Pearson’s product-moment correlation: <code>results$irreg_ratio</code> and <code>results$strap_ratio</code></caption>
+<colgroup>
+<col style="width: 23%">
+<col style="width: 8%">
+<col style="width: 13%">
+<col style="width: 34%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Test statistic</th>
+<th style="text-align: center;">df</th>
+<th style="text-align: center;">P value</th>
+<th style="text-align: center;">Alternative hypothesis</th>
+<th style="text-align: center;">cor</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">1.496</td>
+<td style="text-align: center;">210</td>
+<td style="text-align: center;">0.1362</td>
+<td style="text-align: center;">two.sided</td>
+<td style="text-align: center;">0.1027</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The correlation is weak at 10.3% and the p-value of 0.136 indicates that we cannot reject the null hypothesis (no correlation).</p>
+<p>In contrast, and as we would expect, the irregularity ratio is highly correlated with the ratio of Unclears:</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Pearson’s product-moment correlation: <code>results$irreg_ratio</code> and <code>results$unclear_ratio</code></caption>
+<colgroup>
+<col style="width: 22%">
+<col style="width: 8%">
+<col style="width: 24%">
+<col style="width: 33%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Test statistic</th>
+<th style="text-align: center;">df</th>
+<th style="text-align: center;">P value</th>
+<th style="text-align: center;">Alternative hypothesis</th>
+<th style="text-align: center;">cor</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">25.54</td>
+<td style="text-align: center;">210</td>
+<td style="text-align: center;">2.417e-66 * * *</td>
+<td style="text-align: center;">two.sided</td>
+<td style="text-align: center;">0.8698</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>This suggests that we may, perhaps, be over-cautious in removing unclear activities from our analysis (including them does not change the results materially.)</p>
+</section>
+</section>
+<section id="discussion-1" class="level1">
+<h1>DISCUSSION</h1>
+<p>In summary we have demonstrated that using simple algorithms it may be possible to screen cyclists for the presence or absence of an arrhythmia. However, it was far from perfect with current technology. Improvements in the ability of devices to record heart rate and ECGs, as well as a bigger database of activities and subjects with and without arrhythmia is likely to mean that algorithms developed in the future can be expected to improve the ability to detect problems early, leading to earlier treatment.</p>
+<p>There are many limitations to our data. Firstly, we were unaware of the type of arrhythmia that our subjects suffered from, and whether it was an ongoing problem or a frequent problem, and whether/how episodes of arrhythmia coincided with the timeframe over which we have the subject’s exercise data. Atrial fibrillation, probably the most common “serious” rhythm problem that afflicts cyclists and other endurance athletes, can be a problem that surfaces rarely or be something that is consistent. A change in medication or a procedure can also change its frequency or severity. It is also possible that people who have a heart rhythm problem avoid exercise on days when it is occurring or avoid particular forms of exercise. Furthermore, some rhythm problems cause only very fleeting interruptions in the ECG trace and would not be detected by our methodology (for example ventricular ectopics). Some rhythm problems become less frequent with exercise. These are reasons, perhaps, for the relatively poor sensitivity.</p>
+<section id="simplicity" class="level2">
+<h2 class="anchored" data-anchor-id="simplicity">Simplicity</h2>
+<p>A strength and a weakness of the algorithm for generating the irregular ratio is its simplicity. Given that we have hundreds of thousands of activity records from hundreds of athletes and typically thousands or tens of thousands of heart rate observations for each activity, it might be expected that a machine learning algorithm would perform better. Over time, this may be so but for so long as we only have a relatively small number of survey responses and the issue of identifying errors when sports devices have mis-parsed a heart rate signal remains entangled with the difficulty of true pattern detection, a simple algorithm that offers good heuristics is advantageous. It also helps that it is fast and easy to calculate.</p>
+</section>
+<section id="limitations" class="level2">
+<h2 class="anchored" data-anchor-id="limitations">Limitations</h2>
+<p>As well as shortcomings in the mathematical model, there are intrinsic limitations in the data. Notably, there are likely to be athletes who have responded to our survey and who correctly report that they have not being diagnosed with arrhythmia but who nonetheless have it.</p>
+<p>We made a number of assumptions regarding our gappiness and stickiness, notably that stickiness is unlikely to be of physiological interest whereas gappiness is our central measure of suspicion. We confirmed, however, that there was no correlation between the two.</p>
+<p>If we had further details about subjects’ arrhythmias, it also would enable us to study the temporal pattern of the irregularity ratio, which, in the context of a date of onset or diagnosis, might be expected to be fruitful. For example, in the table given in the Confusion matrix section above we observed a relatively large number of cases where a survey response disclosed arrhythmia that was not predicted by the model. At least some of these may be due to remedial measures such as medication and/or reduction of exercise intensity consequent to diagnosis but pre-dating the collection of many or all activities.</p>
+</section>
+</section>
+<section id="conclusion-1" class="level1">
+<h1>CONCLUSION</h1>
+<p>In this study we have found that in a population of around 100 very active cyclists, a high frequency with which gaps appear at the top end of the heart rate range is associated with heart rhythm problems. In some instances the heart rates reported are higher than is medically plausible. We surmise that, even when lacking fidelity to the true heart rate, readings from a chest strap may be informational in signalling erratic electrial cardiac activity. Where this is observed, it may prove a useful alert to the subject to seek a medical consultation to check for arrhythmia. On the other hand, the absence of such a pattern does not, on the basis of the present analysis, reassure the subject that there is no arrhythmia.</p>
+<p>This merits further investigation, for example to: analyse changes in irregularity ratio over time for athletes with a known medical history; compare more sports; compare types of heart rate monitor, including those that read a pulse optically at the wrist; apply alternative irregularity detection techniques, including techniques that result in a continuous regularity metric; extend to a wider pool of athletes.</p>
+</section>
+<section id="appendices" class="level1">
+<h1>APPENDICES</h1>
+<section id="data-available" class="level2">
+<h2 class="anchored" data-anchor-id="data-available">Data available</h2>
+<p>At the time of writing, 1291 athletes have at some point authorised Crickles to access their data and of these 1074 currently remain authorised and are thus available for this study. The gender breakdown of the authorised athletes is as follows:</p>
+<div class="cell" data-gender="asis">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Athletes by gender</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Gender</th>
+<th style="text-align: right;">Count</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">F</td>
+<td style="text-align: right;">74</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">M</td>
+<td style="text-align: right;">991</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NA</td>
+<td style="text-align: right;">9</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The youngest athlete is 19 years old, the eldest is 1951 years old and the median age is 53.22.</p>
+<p>From these athletes, we have analysed 1,876,121 activities, which arise from 39 different sports. The activity counts for the ten most heavily represented sports are as follows:</p>
+<div class="cell" data-sports="asis">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Activity county of top ten sports</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Sport</th>
+<th style="text-align: right;">Records</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Ride</td>
+<td style="text-align: right;">960,615</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Run</td>
+<td style="text-align: right;">321,323</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">VirtualRide</td>
+<td style="text-align: right;">229,419</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Walk</td>
+<td style="text-align: right;">146,953</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Workout</td>
+<td style="text-align: right;">54,188</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">WeightTraining</td>
+<td style="text-align: right;">35,353</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Swim</td>
+<td style="text-align: right;">33,815</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Yoga</td>
+<td style="text-align: right;">28,865</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Hike</td>
+<td style="text-align: right;">25,235</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Rowing</td>
+<td style="text-align: right;">9,892</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Many, but not all, of these activities are saved with heart rate readings recorded by the sports device throughout the activity. In fact, the proportion of activities that have heart rate data currently stands at 76.73%. When estimating cardiac stress, in the absence of heart rate data we can use statistical models based on factors such as speed, power and gradient as a proxy; however, for the purposes of this paper we only use those activities for which we have heart rate data.</p>
+</section>
+<section id="analysis-of-strap-artefacts-seen-in-heart-rate-readings" class="level2">
+<h2 class="anchored" data-anchor-id="analysis-of-strap-artefacts-seen-in-heart-rate-readings">Analysis of strap artefacts seen in heart rate readings</h2>
+<p>First, we look at the maximum heart rate levels recorded for each athlete. Taking out one outlier in which a heart rate of 365 beats per minute (bpm) was recorded, we find this distribution of maximum heart rates by athlete:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arrhythmia_files/figure-html/max_hr_chart-1.png" class="img-fluid figure-img" width="480"></p>
+<figcaption>Maximum heart rates</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>If the traditional estimate <em>maximum heart rate = 220 - age</em> had any relevance to our population we might, remembering the age of our youngest athlete, expect the distribution to end at around 201bpm. This clearly does not happen. In fact, beyond an initial peak that perhaps indicates high valid, if unexpected, values for a fit cohort, we have a second peak above 240 bpm and 22.5% of our athletes record a maximum heart rate of 240bpm or more.</p>
+<p>Every possible value between 173bpm and 255bpm for maximum heart rate is found for at least one athlete. With the single outlier exception, the distribution comes to a hard stop at 255bpm.</p>
+<p>On medical and observational grounds, we do not believe that hundreds of athletes are genuinely attaining heart rates that are this high. Rather we attribute it to sporadic mis-recording by the sports devices used to capture heart rates.</p>
+<p>Nor is this the only kind of error seen in the heart rate data. Here’s an example of a heart rate chart taken from an athlete activity:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arrhythmia_files/figure-html/sticky_1-1.png" class="img-fluid figure-img" width="528"></p>
+<figcaption>Extreme example of a sticky heart rate</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Clearly, this is not a true picture of the athlete’s heart rate!</p>
+<p>It can be more subtle. Take this example:</p>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arrhythmia_files/figure-html/sticky_2-1.png" class="img-fluid figure-img" width="528"></p>
+<figcaption>Subtler case of stickiness</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>At a first glance, the top chart looks normal. However, if we zoom in, as we do on the lower chart, we can see a couple of sections where the reported heart rate is flatlining at a constant level. In fact, it twice reports a constant level for over two minutes. Again, such flatlining occurences are physiologically highly implausible yet frequently seen in the data, even though on longer activities, such as a three hour bike ride, a couple of minutes of flatlining might not be visually evident on a chart on a website.</p>
+</section>
+<section id="analysis-of-device-by-sport" class="level2">
+<h2 class="anchored" data-anchor-id="analysis-of-device-by-sport">Analysis of device by sport</h2>
+<p>We saw above that we took a sample of over 10,000 activities and analysed the usage by sport, device and device family. In this sample, 94 different devices were found.</p>
+<p>For our purposes, the single most significant difference amongst those devices that measure heart rate lies between those that measure the heart rate using electrical sensors near to the heart and those that measure the pulse optically, typically at the wrist. Studies appear to show that the former are generally more reliable [REF]. A related factor is the frequency with which the heart rate is sampled by the device. This is a function not only of the device itself but often also of how it is configured by the user. For example, a bike computer that is being used to capture readings from a power meter as well as a heart rate monitor will usually sample data second by second. On the other hand, running watches will often adjust the sampling frequency dynamically in order to preserve battery life. We also need to remember that because of the interoperability between devices and the fact that we only have one device name (at most) per activity, we only know (at best) the device used to <em>record</em> the heart rate, and we can’t necessarily always strictly deduce from that how the heart rate was <em>measured</em>.</p>
+<p>We studied the differences between devices by taking the mean time between readings for each activity and then finding the median of these times by device. This gives us the following:</p>
+<div class="cell">
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'device_family'. You can override using the
+`.groups` argument.</code></pre>
+</div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Average heart rate sampling frequency in seconds</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">device_family</th>
+<th style="text-align: right;">Ride</th>
+<th style="text-align: right;">Run</th>
+<th style="text-align: right;">VirtualRide</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">bike_computer</td>
+<td style="text-align: right;">2.0</td>
+<td style="text-align: right;">5.0</td>
+<td style="text-align: right;">1.1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">phone</td>
+<td style="text-align: right;">1.1</td>
+<td style="text-align: right;">1.8</td>
+<td style="text-align: right;">NA</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">platform</td>
+<td style="text-align: right;">1.0</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: right;">1.0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">trainer</td>
+<td style="text-align: right;">1.0</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: right;">1.1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">watch</td>
+<td style="text-align: right;">3.2</td>
+<td style="text-align: right;">3.6</td>
+<td style="text-align: right;">1.0</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>As expected, bike computers used by cyclists have a much lower median time between readings than watches used by runners. Virtual rides and rides using a platform or a trainer are very frequently also measuring power and plugged into a mains supply and it is therefore no surprise to see that they do second by second sampling.</p>
+<p>Runs using a bike computer are rare - there were only 6 in this sample.</p>
+<p>Infrequent sampling may be a factor behind a phenomenon often reported by users of sports watches: the heart rate readings they show tend to lag the actual heart rate. There are countless instances of this being reported anecodotally, sometimes by athletes wearing a sports watch and using a bike computer at the same time specifically to confirm the phenomenon, but as far as we are aware this has not been studied systematically.</p>
+<p>Insofar as sports watches are laggier than straps, this is most likely to be observed at low heart rates and at the start of activities when the heart rate is increasing from a relatively rested state. At the high end, the heart is unlikely to be able to increase dramatically and in any case the sampling algorithm is likely to have responed to the elevated heart rate and to set sampling to a greater frequency. Even so, it is to eliminate gappiness due to lagged readings that we correlate arrhythmia with the proportion of <em>irregular</em> activities rather than the proportion of all gappy readings, also including <em>unclear</em> activities.</p>
+<p>Our beliefs about the differences between the operation of sports watches and chest straps lead us to two expectations:</p>
+<ol type="1">
+<li>Since we believe that watches are laggier than chest straps, we expect that the unclear ratio for watches will be higher than for straps;<br>
+</li>
+<li>Since we postulate that irregularity - gappiness only at the high end of the range - is in part due to electrical cardiac phenomema, we expect that the irregular ratio for straps will be higher than for watches.</li>
+</ol>
+<p>Both of these expectations are borne out in our sample:</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Regularity percentages by device family</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">device_family</th>
+<th style="text-align: right;">irreg_ratio</th>
+<th style="text-align: right;">strap_ratio</th>
+<th style="text-align: right;">unclear_ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">bike_computer</td>
+<td style="text-align: right;">2.7</td>
+<td style="text-align: right;">5.1</td>
+<td style="text-align: right;">8.2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">phone</td>
+<td style="text-align: right;">0.0</td>
+<td style="text-align: right;">11.7</td>
+<td style="text-align: right;">3.0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">platform</td>
+<td style="text-align: right;">0.4</td>
+<td style="text-align: right;">5.7</td>
+<td style="text-align: right;">1.2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">trainer</td>
+<td style="text-align: right;">0.8</td>
+<td style="text-align: right;">9.1</td>
+<td style="text-align: right;">0.8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">watch</td>
+<td style="text-align: right;">1.9</td>
+<td style="text-align: right;">2.1</td>
+<td style="text-align: right;">14.8</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>While we would have liked to have been able to select only activities for which we know that heart rate readings were taken from a chest strap, we were unable to do so for the reasons explained above and we believe that selecting only cycling activities in fact achieves this to an acceptable extent.</p>
+</section>
+<section id="residuals" class="level2">
+<h2 class="anchored" data-anchor-id="residuals">Residuals</h2>
+<p>In addition to the results shown above, we can analyse leverage and residuals to evaluate the logistic regression model.</p>
+<p>The expected leverage is 0.009434 and should lie between 0 and 1. The actual values lie between 0.005015 and 0.0779486.</p>
+<p>We would expect to see ~5% of the residuals (numerically = 10.6) have absolute size greater than 1.96; in fact, we see 1. Likewise, we would expect to see ~1% of the residuals (numerically = 2.12) have absolute size greater than 2.58; in fact, we see 0.</p>
+</section>
+<section id="data-sufficiency" class="level2">
+<h2 class="anchored" data-anchor-id="data-sufficiency">Data sufficiency</h2>
+<p>Even after we whittled down our initial population of hundreds of thousands of activities to those with heart rate data from rides conducted by survey respondents, we are still left with 207855 activities. These are satisfactorily spread amongst arrhythmics and non-arrhythmics: the distribution of numbers of filtered activities for the former is:</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 13%">
+<col style="width: 12%">
+<col style="width: 11%">
+<col style="width: 13%">
+<col style="width: 9%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Min.</th>
+<th style="text-align: center;">1st Qu.</th>
+<th style="text-align: center;">Median</th>
+<th style="text-align: center;">Mean</th>
+<th style="text-align: center;">3rd Qu.</th>
+<th style="text-align: center;">Max.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">43</td>
+<td style="text-align: center;">316.2</td>
+<td style="text-align: center;">789.5</td>
+<td style="text-align: center;">823.8</td>
+<td style="text-align: center;">1282</td>
+<td style="text-align: center;">2765</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>and for the latter:</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 13%">
+<col style="width: 12%">
+<col style="width: 9%">
+<col style="width: 13%">
+<col style="width: 9%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Min.</th>
+<th style="text-align: center;">1st Qu.</th>
+<th style="text-align: center;">Median</th>
+<th style="text-align: center;">Mean</th>
+<th style="text-align: center;">3rd Qu.</th>
+<th style="text-align: center;">Max.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">6</td>
+<td style="text-align: center;">463.8</td>
+<td style="text-align: center;">926.5</td>
+<td style="text-align: center;">1042</td>
+<td style="text-align: center;">1491</td>
+<td style="text-align: center;">4189</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="other-survey-questions" class="level2">
+<h2 class="anchored" data-anchor-id="other-survey-questions">Other survey questions</h2>
+<p>As stated above, the heart health survey captures a number of data points from respondents. Of these, the only question whose response we consider in this analysis is <em>Do you have, or have you had, a heart rhythym problem?</em> The relationship between answers to all of the questions in the survey can be illustrated with an UpSet plot:</p>
+<div class="cell">
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1 row containing missing values or values outside the scale range
+(`geom_bar()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="arrhythmia_files/figure-html/upset plot-1.png" class="img-fluid figure-img" data-fig-pos="H" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The green bars indicate how many affirmative responses were given to each question. For example, the bottom two bars tell us that 63 respondents reported arrhythmia and 92 supplied other information (in free-form text). The heights of the blue columns, also given numerically, encode the intersection size of affirmative responses as indicated by the black dots. For example, the first column shows that 24 respondents gave extra information while reporting none of the five symptoms. Also, if we sum across the columns for which “other info” is given and arrhythmia is also reported we find that there are 42 such responses.</p>
+<p>In future, especially if we have a much larger data set, it may be fruitful to examine the other symptoms and the free format “other information” for potential explanatory significance.</p>
+</section>
+<section id="out-of-sample-test" class="level2">
+<h2 class="anchored" data-anchor-id="out-of-sample-test">Out of sample test</h2>
+<p>Since the original draft of this paper was written the number of survey responses has increased and it is now more feasible to hold back a testing set from the sample of surveys. Apportioning 75% of our surveys for training and the rest for testing generates the following confusion matrix on the test set:</p>
+<div style="page-break-after: always;"></div>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Confusion matrix for an out of sample test set</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Arrhythmia</th>
+<th style="text-align: right;">Predict No</th>
+<th style="text-align: right;">Predict Yes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">No</td>
+<td style="text-align: right;">37</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Yes</td>
+<td style="text-align: right;">13</td>
+<td style="text-align: right;">2</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Sensitivity: <strong>13.3%</strong><br>
+Specificity: <strong>97.4%</strong><br>
+Positive Predictive Value: <strong>66.7%</strong><br>
+Negative Predictive Value: <strong>74%</strong></p>
+</section>
+</section>
+<section id="acknowledgements" class="level1">
+<h1>ACKNOWLEDGEMENTS</h1>
+<p>The authors would like to thank Stephen Mildenhall of St John’s University, New York and Mike Bradley of Credit Suisse for helpful review input.</p>
+</section>
+<section id="references" class="level1">
+
+
+
+
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">REFERENCES</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-Amara2015" class="csl-entry" role="listitem">
+Amara, Mohamed El Oualid. 2015. <span>“<span>EARLY DETECTION AND TREATMENT OF SUPRAVENTRICULAR ARRHYTHMIA WITH REMOTE MONITORING CAN PREVENT ITS PROGRESSION IN PACEMAKER PATIENTS: THE RANDOMIZED, MULTICENTER SETAM TRIAL</span>.”</span> <em>Journal of the American College of Cardiology</em> 65 (10_Supplement): A388–88. <a href="https://doi.org/10.1016/S0735-1097(15)60388-6">https://doi.org/10.1016/S0735-1097(15)60388-6</a>.
+</div>
+<div id="ref-Baldesberger2008" class="csl-entry" role="listitem">
+Baldesberger, Sylvette. 2008. <span>“<span class="nocase">Sinus node disease and arrhythmias in the long-term follow-up of former professional cyclists</span>.”</span> <em>European Heart Journal</em> 29: 71–78. <a href="https://doi.org/10.1093/eurheartj/ehm555">https://doi.org/10.1093/eurheartj/ehm555</a>.
+</div>
+<div id="ref-Calvo2016" class="csl-entry" role="listitem">
+Calvo, Naiara. 2016. <span>“<span class="nocase">Emerging risk factors and the dose-response relationship between physical activity and lone atrial fibrillation: a prospective case-control study</span>.”</span> <em>Oxford University Press on Behalf of the European Society of Cardiology</em>. <a href="https://doi.org/10.1093/europace/euv216">https://doi.org/10.1093/europace/euv216</a>.
+</div>
+<div id="ref-Centurion2019" class="csl-entry" role="listitem">
+Centurión, Osmar Antonio. 2019. <span>“<span class="nocase">The Association Between Atrial Fibrillation and Endurance Physical Activity: How Much is too Much?</span>”</span> <em>Journal of Atrial Fibrillation</em>. <a href="https://doi.org/10.4022/jafib.2167">https://doi.org/10.4022/jafib.2167</a>.
+</div>
+<div id="ref-Case2017" class="csl-entry" role="listitem">
+Christoper Case, Lennard Zinn, Dr John Mandrola. 2017. <em>The Haywire Heart</em>. 1st ed. Boca Raton, Florida: VeloPress. <a href="https://www.velopress.com/books/the-haywire-heart/">https://www.velopress.com/books/the-haywire-heart/</a>.
+</div>
+<div id="ref-Tanaka2001" class="csl-entry" role="listitem">
+Hirofumi Tanaka, Kevin D. Monahan, PHD. 2001. <span>“<span>Age-Predicted Maximal Heart Rate Revisited</span>.”</span> <em>Journal of the American College of Cardiology</em> 37: 153–56.
+</div>
+<div id="ref-Kirchhof2009" class="csl-entry" role="listitem">
+Kirchhof, Paulus. 2009. <span>“<span class="nocase">Can we improve outcomes in AF patients by early therapy?</span>”</span> <em>BMC Medicine</em>. <a href="https://doi.org/0.1186/1741-7015-7-72">https://doi.org/0.1186/1741-7015-7-72</a>.
+</div>
+<div id="ref-Perez2019" class="csl-entry" role="listitem">
+Marco V. Perez, Kenneth W. Mahaffey, M. D. 2019. <span>“<span class="nocase">Large-Scale Assessment of a Smartwatch to Identify Atrial Fibrillation</span>.”</span> <em>The New England Journal of Medicine</em>. <a href="https://doi.org/10.1056/NEJMoa1901183">https://doi.org/10.1056/NEJMoa1901183</a>.
+</div>
+<div id="ref-Tison2018" class="csl-entry" role="listitem">
+Tison, Geoffrey H., José M. Sanchez, Brandon Ballinger, Avesh Singh, Jeffrey E. Olgin, Mark J. Pletcher, Eric Vittinghoff, et al. 2018. <span>“<span class="nocase">Passive Detection of Atrial Fibrillation Using a Commercially Available Smartwatch</span>.”</span> <em>JAMA Cardiology</em> 3 (5): 409–16. <a href="https://doi.org/10.1001/jamacardio.2018.0136">https://doi.org/10.1001/jamacardio.2018.0136</a>.
+</div>
+<div id="ref-Zou2014" class="csl-entry" role="listitem">
+Zou, Ke, Xiaoling; Wang. 2014. <span>“<span class="nocase">Numerical simulations and modeling for stochastic biological systems with jumps</span>.”</span> <em>Communications in Nonlinear Science and Numerical Simulation</em> 19: 1557–68. <a href="https://doi.org/10.1016/j.cnsns.2013.09.010">https://doi.org/10.1016/j.cnsns.2013.09.010</a>.
+</div>
+</div></section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

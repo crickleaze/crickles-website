@@ -17,6 +17,8 @@ website:
         menu:
           - text: "Sustainable Performance"
             href: sustainable.qmd
+          - text: "Detecting Arrhythmia"  
+            href: arrhythmia.qmd
       - text: "About"
         href: about.qmd
       - text: "Contact"
