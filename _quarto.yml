@@ -20,7 +20,7 @@ website:
           - text: "Sustainable Performance"
             href: sustainable.qmd
           - text: "Detecting Arrhythmia"  
-            href: arrhythmia.qm
+            href: arrhythmia.qmd
       - text: "Get Started"
         href: get-started.qmd
       - text: "Contact"
