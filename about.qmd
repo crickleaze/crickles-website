@@ -2,9 +2,9 @@
 title: "About"
 ---
 
-While you’re getting fit, stay healthy. Crickles provides cardiac stress analysis calculated from the activities you record on your sports devices. The quality of Crickles' analytical models is unparalleled and ensures consistency across activity types, no matter what equipment you use on each occasion - whether it's a chest-strap-based heart rate monitor, a sports watch, a power meter or none of these. Crickles models capture both population-wide effects and subject-specific variation and the analysis is tailored to your unique history.
+While you’re getting fit, stay healthy. Crickles provides cardiac stress analysis calculated from the activities you record on your sports devices. The quality of Crickles' analytical models is unparalleled and ensures consistency across activity types, no matter what equipment you use on each occasion - whether it's a chest strap heart rate monitor, a sports watch, a power meter or none of these. Crickles models capture both population-wide effects and subject-specific variation and the analysis is tailored to your unique history.
 
 Crickles also helps you to compare your aggregate training load to other users so that you can see where you stand, month by month or season by season, in comparison to other keen participants in endurance sport: are you exercising more than most others, or at a higher intensity, or are your exercise levels relatively moderate?
 
-Furthermore, Crickles also picks out certain anomalies in heart rate data from your device and may help you to identify a malfunctioning chest strap or even a pattern of irregularity that may warrant attention, although Crickles itself is in no sense a medical tool and cannot diagnose your cardiac health.
+Crickles also picks out certain anomalies in heart rate data from your device and may help you to identify a malfunctioning chest strap or even a pattern of irregularity that may warrant attention, although Crickles itself is in no sense a medical tool and cannot diagnose your cardiac health.
 

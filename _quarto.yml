@@ -11,6 +11,8 @@ website:
     left:
       - text: "Home"
         href: index.qmd
+      - text: "About"
+        href: about.qmd
       - text: "Navigator"
         href: app.qmd
       - text: "Research"
@@ -18,9 +20,7 @@ website:
           - text: "Sustainable Performance"
             href: sustainable.qmd
           - text: "Detecting Arrhythmia"  
-            href: arrhythmia.qmd
-      - text: "About"
-        href: about.qmd
+            href: arrhythmia.qm
       - text: "Get Started"
         href: get-started.qmd
       - text: "Contact"
