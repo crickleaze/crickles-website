@@ -58,7 +58,7 @@
 }
 
 .navbar-brand:hover {
-    color: var(--accent-blue) !important;
+    color: var(--accent-color) !important;
 }
 
 /* Style navbar links */
@@ -75,7 +75,7 @@
 
 .navbar-nav .nav-link:hover {
     background-color: var(--hover-bg) !important;
-    color: var(--accent-blue) !important;
+    color: var(--accent-color) !important;
 }
 
 /* Style dropdown menus */
@@ -92,7 +92,7 @@
 
 .dropdown-item:hover {
     background-color: var(--hover-bg) !important;
-    color: var(--accent-blue) !important;
+    color: var(--accent-color) !important;
 }
 
 /* Adjust body to account for fixed header */
