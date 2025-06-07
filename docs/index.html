@@ -81,7 +81,7 @@ ul.task-list li input[type="checkbox"] {
     const options = {
       valueNames: ['listing-image','listing-date','listing-title','listing-subtitle','listing-categories','listing-reading-time',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
       
-      searchColumns: ["listing-categories"],
+      searchColumns: ["listing-title","listing-author","listing-date","listing-image","listing-description","listing-categories"],
     };
 
     window['quarto-listings'] = window['quarto-listings'] || {};
@@ -131,6 +131,8 @@ window.Quarto = {
 
 <link rel="stylesheet" href="custom-header.css">
 <link rel="stylesheet" href="contact-form.css">
+<link rel="stylesheet" href=".sidebar-navigation::before {
+  content: " crickle";="" display:="" block;="" font-weight:="" bold;="" font-size:="" 1.1em;="" margin-bottom:="" 0.5rem;="" padding-bottom:="" border-bottom:="" 1px="" solid="" #dee2e6;="" }="" .sidebar-navigation::after="" {="" content:="" "definition="" -="" (arch.="" exc.="" in="" pl.:="" crickles)="" a="" pre-symptomatic="" cardiac="" irregularity,="" detectable="" by="" ecg,="" caused="" intense="" athletic="" activity="" with="" insufficient="" recovery.";="" 0.9em;="" font-style:="" italic;="" 1.5rem;="" 1rem;="" order:="" -1;="" }"="">
 </head>
 
 <body class="nav-fixed">
@@ -153,10 +155,6 @@ window.Quarto = {
   <li class="nav-item">
     <a class="nav-link active" href="./index.html" aria-current="page"> 
 <span class="menu-text">Home</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./get-started.html"> 
-<span class="menu-text">Get Started</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./app.html"> 
@@ -182,6 +180,10 @@ window.Quarto = {
 <span class="menu-text">About</span></a>
   </li>  
   <li class="nav-item">
+    <a class="nav-link" href="./get-started.html"> 
+<span class="menu-text">Get Started</span></a>
+  </li>  
+  <li class="nav-item">
     <a class="nav-link" href="./contact.html"> 
 <span class="menu-text">Contact</span></a>
   </li>  
@@ -204,7 +206,7 @@ window.Quarto = {
   <li><a href="#crickle" id="toc-crickle" class="nav-link active" data-scroll-target="#crickle">CRICKLE</a></li>
   </ul>
 </nav>
-    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(0)</span></div></div></div>
+    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(1)</span></div><div class="category" data-category="aGVhbHRo">health <span class="quarto-category-count">(1)</span></div><div class="category" data-category="bmV3cw==">news <span class="quarto-category-count">(1)</span></div><div class="category" data-category="b3Blbg==">open <span class="quarto-category-count">(1)</span></div><div class="category" data-category="cGVyZm9ybWFuY2U=">performance <span class="quarto-category-count">(1)</span></div><div class="category" data-category="cmVzZWFyY2g=">research <span class="quarto-category-count">(1)</span></div><div class="category" data-category="dXBkYXRlcw==">updates <span class="quarto-category-count">(1)</span></div></div></div>
 <!-- main -->
 <main class="content column-page-left" id="quarto-document-content">
 
@@ -238,7 +240,51 @@ window.Quarto = {
 
 <div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
 <div class="list grid quarto-listing-cols-3">
-
+<div class="g-col-1" data-index="0" data-categories="bmV3cyUyQ3Jlc2VhcmNoJTJDdXBkYXRlcyUyQ29wZW4lMkNwZXJmb3JtYW5jZSUyQ2hlYWx0aA==" data-listing-date-sort="NaN" data-listing-file-modified-sort="1749325478514" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2" data-listing-word-count-sort="233">
+<a href="./posts/2025-06-07_welcome-new-crickles.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" src="./posts/featured.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Welcome to the new Crickles site!
+</h5>
+<div class="card-subtitle listing-subtitle">
+All the content in one place
+</div>
+<div class="listing-reading-time card-text text-muted">
+2 min
+</div>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('bmV3cw=='); return false;">
+news
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('cmVzZWFyY2g='); return false;">
+research
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('dXBkYXRlcw=='); return false;">
+updates
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('b3Blbg=='); return false;">
+open
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('cGVyZm9ybWFuY2U='); return false;">
+performance
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('aGVhbHRo'); return false;">
+health
+</div>
+</div>
+<div class="card-attribution card-text-small end">
+<div class="listing-date">
+Invalid Date
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
 </div>
 <div class="listing-no-matching d-none">
 No matching items

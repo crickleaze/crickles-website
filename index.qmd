@@ -9,6 +9,26 @@ listing:
   fields: [image, date, title, subtitle, categories, reading-time]
   page-size: 6
 page-layout: full
+css: |
+  .sidebar-navigation::before {
+    content: "CRICKLE";
+    display: block;
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #dee2e6;
+  }
+  .sidebar-navigation::after {
+    content: "Definition - (Arch. exc. in pl.: crickles) A pre-symptomatic cardiac irregularity, detectable by ECG, caused by intense athletic activity with insufficient recovery.";
+    display: block;
+    font-size: 0.9em;
+    font-style: italic;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    order: -1;
+  }
 ---
 
 ## CRICKLE

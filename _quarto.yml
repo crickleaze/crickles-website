@@ -11,8 +11,6 @@ website:
     left:
       - text: "Home"
         href: index.qmd
-      - text: "Get Started"
-        href: get-started.qmd
       - text: "Navigator"
         href: app.qmd
       - text: "Research"
@@ -23,9 +21,11 @@ website:
             href: arrhythmia.qmd
       - text: "About"
         href: about.qmd
+      - text: "Get Started"
+        href: get-started.qmd
       - text: "Contact"
         href: contact.qmd
-
+        
 format:
   html:
     theme: cosmo
