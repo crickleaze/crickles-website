@@ -152,11 +152,11 @@ We aimed to determine if persistent observable irregularities in the heart rate 
 We begin with two measures of the regularity of the heart rate chart for any given activity. The first is **stickiness**. We observe (see Appendix) that sometimes the heart rate reading jams on a certain value for an implausibly long period of time. Where this happens, we believe it to be an error on the part of the recording sports device. Moreover, it is unlikely to be an *interesting* error in which the athlete's cardiac behaviour plays any part. From the perspective of experience, we might expect that any record of a heart rate held at the same level for over a minute is wrong: while the fluctuation of, say, someone cycling at threshold in a time trial might be low, we would expect to see some change over the course of any minute. If we look at the actual record of reported sustained heart rates, there is a wide range of values; the maximum currently stands at over `r trunc(max(acts_all$max_flat_run, na.rm = TRUE)/3600)` hours! However, 95% of the range is within 90 seconds and so we take this as our threshold for reporting a probable error. Here is the distribution of values that are less than 90 seconds:
 
 ```{r sticky, echo = FALSE, fig.cap="Stickiness frequency", fig.height=3, fig.width = 5, fig.pos="H",out.extra=''}
-acts_all %>% 
-  filter(max_flat_run < 90) %>% 
-  ggplot(aes(x = max_flat_run))  + 
-  geom_histogram(aes(y = ..count..), alpha = 0.4, binwidth = 1, fill = "slategrey") + 
-  geom_line(aes(y = ..count..), stat = "density", colour = "seagreen") + 
+acts_all %>%
+  filter(max_flat_run < 90) %>%
+  ggplot(aes(x = max_flat_run)) +
+  geom_histogram(aes(y = after_stat(count)), alpha = 0.4, binwidth = 1, fill = "slategrey") +
+  geom_line(aes(y = after_stat(count)), stat = "density", colour = "seagreen") +
   labs(x = "longest held heartrate (seconds)", y = "number of activities")
 ```
 

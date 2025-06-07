@@ -11,6 +11,8 @@ website:
     left:
       - text: "Home"
         href: index.qmd
+      - text: "Get Started"
+        href: get-started.qmd
       - text: "Navigator"
         href: app.qmd
       - text: "Research"

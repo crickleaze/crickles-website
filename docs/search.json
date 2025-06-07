@@ -21,11 +21,11 @@
     "text": "Definition - ( Arch. exc. in pl.: crickles) A pre-symptomatic cardiac irregularity, detectable by ECG, caused by intense athletic activity with insufficient recovery."
   },
   {
-    "objectID": "contact.html",
-    "href": "contact.html",
-    "title": "Contact",
+    "objectID": "get-started.html",
+    "href": "get-started.html",
+    "title": "Get Started",
     "section": "",
-    "text": "Full Name\n            \n        \n        \n        \n            Email Address\n            \n        \n        \n        \n            Subject\n            \n        \n        \n        \n            Message\n            \n        \n        \n        \n            Send Message"
+    "text": "Crickles analyses activties that you record on your sports devices (Garmin, Wahoo, Zwift and so forth) and shows the results of this analysis on the Navigator page. Crickles itself does not access your sports devices directly but connects to intervals.icu, which offers connectivity to all of the major devices and platforms.\nIf you don’t have a log-in for the Navigator yet here’s how you get started.\n\nCreate an intervals.icu account and from there link your sports devices and platforms (Garmin Connect, Wahoo, Zwift etc.). Here, make sure that your activities come directly from your device, and not via Strava. No activities that are loaded into intervals.icu from Strava will be visible in the Crickles Navigator.\nTo make life easier, make sure you remain logged on to Intervals throughout the next steps.\nOnce you can see the activities you expect on intervals.icu, go to the Navigator page where you should be prompted to create a new Crickles account using your email address. If you’re a seasoned Crickles user your old Crickles data will probably be retrieved automatically so long as you use the same email address on Intervals that you used previously on Crickles. \nIf Crickles has not managed to recover your date of birth from your Crickles Classic account you’ll be prompted to re-enter it.\nYou’ll then be prompted to Connect to Intervals. Please do so.\nThis should take you through to the Intervals “authorise Crickles” page. Please do this too.\nReturn to the Crickles Navigator. On your first visit your activities will probably take a minute or two to load, which can feel like a long time. According to how much data there is, you’re likely to see a notification in brown in the bottom right of your screen followed, once a usable amount of data has been fetched and analysed, by a blue notification in the top of the sidebar. This time-consuming load only happens once.\n\nIf you have any issues with this process please get in touch, either directly or through the Contact page."
   },
   {
     "objectID": "arrhythmia.html#introduction",
@@ -180,6 +180,13 @@
     "title": "Detecting arrhythmia from exercise data (DRAFT)",
     "section": "Out of sample test",
     "text": "Out of sample test\nSince the original draft of this paper was written the number of survey responses has increased and it is now more feasible to hold back a testing set from the sample of surveys. Apportioning 75% of our surveys for training and the rest for testing generates the following confusion matrix on the test set:\n\n\n\n\nConfusion matrix for an out of sample test set\n\n\nArrhythmia\nPredict No\nPredict Yes\n\n\n\n\nNo\n37\n1\n\n\nYes\n13\n2\n\n\n\n\n\nSensitivity: 13.3%\nSpecificity: 97.4%\nPositive Predictive Value: 66.7%\nNegative Predictive Value: 74%"
+  },
+  {
+    "objectID": "contact.html",
+    "href": "contact.html",
+    "title": "Contact",
+    "section": "",
+    "text": "Full Name\n            \n        \n        \n        \n            Email Address\n            \n        \n        \n        \n            Subject\n            \n        \n        \n        \n            Message\n            \n        \n        \n        \n            Send Message"
   },
   {
     "objectID": "sustainable.html",
