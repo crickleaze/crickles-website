@@ -6,7 +6,7 @@ Crickles analyses activties that you record on your sports devices (Garmin, Waho
 
 If you don't have a log-in for the Navigator yet here's how you get started.
 
-1.  Create an [intervals.icu](https://intervals.icu) account and from there link your sports devices and platforms (Garmin Connect, Wahoo, Zwift etc.). Here, [make sure that your activities come directly from your device, and not via Strava]{style="color: red; font-weight: bold;"}. No activities that are loaded into intervals.icu from Strava will be visible in the Crickles Navigator.
+1.  Create an [intervals.icu](https://intervals.icu) account and from there link your sports devices and platforms (Garmin Connect, Wahoo, Zwift etc.). Here, [make sure that your activities come directly from your devices, and not via Strava]{style="color: red; font-weight: bold;"}. No activities that are loaded into intervals.icu from Strava will be visible in the Crickles Navigator.
 
 2.  To make life easier, make sure you remain logged on to Intervals throughout the next steps.
 
