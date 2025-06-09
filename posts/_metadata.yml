@@ -5,4 +5,3 @@ citation: false
 format:
   html:
     allow-html: true
-    include-after-body: giscus.html
