@@ -2,3 +2,7 @@
 author: "Ian"
 categories: [news, research, updates]
 citation: false
+format:
+  html:
+    allow-html: true
+    include-after-body: giscus.html
