@@ -34,6 +34,7 @@ format:
     css: 
       - custom-header.css
       - contact-form.css
+      - styles.css
   
 
 

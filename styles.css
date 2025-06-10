@@ -1,1 +1,13 @@
 /* css styles */
+
+#cusdis_thread {
+  margin-top: 2rem !important;
+  margin-bottom: 2rem !important;
+}
+
+/* Reduce any excessive spacing before comments */
+body > #cusdis_thread,
+main + #cusdis_thread,
+.page-body + #cusdis_thread {
+  margin-top: 2rem !important;
+}

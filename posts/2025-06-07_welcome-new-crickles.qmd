@@ -4,6 +4,9 @@ subtitle: "All the content in one place"
 date: 2025-06-07
 categories: [open source]
 image: "../images/css_screen.png"
+format:
+  html:
+    include-after-body: "../cusdis.html"
 ---
 
 As you can see, the Crickles website has had a makeover. The first purpose of this is to re-integrate the Navigator with the rest of our content; these have been separated for some months and are now back together.

@@ -1,5 +1,6 @@
 ---
 title: "Get Started"
+comments: false
 ---
 
 Crickles analyses activties that you record on your sports devices (Garmin, Wahoo, Zwift and so forth) and shows the results of this analysis on the Navigator page. Crickles itself does not access your sports devices directly but connects to intervals.icu, which offers connectivity to all of the major devices and platforms.

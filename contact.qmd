@@ -1,6 +1,5 @@
 ---
 title: "Contact"
-format: html
 ---
 
 ```{=html}
