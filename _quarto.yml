@@ -6,16 +6,6 @@ website:
   title: "Crickles"
   description: "Heart health insights for endurance sports"
   favicon: favicon.ico
-  comments:
-    giscus:
-      repo: crickleaze/crickles-website
-      repo-id: "R_kgDOO1U9Rw"
-      category: "General"
-      category-id: "DIC_kwDOO1U9R84CrPPQ"
-      mapping: "pathname"
-      reactions-enabled: true
-      input-position: "bottom"
-      theme: "preferred_color_scheme"
   
   navbar:
     left:

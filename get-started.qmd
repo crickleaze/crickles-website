@@ -10,7 +10,7 @@ If you don't have a log-in for the Navigator yet here's how you get started.
 
 2.  To make life easier, make sure you remain logged on to Intervals throughout the next steps.
 
-3.  Once you can see the activities you expect on intervals.icu, go to [the Navigator page](https://new.crickles.org/app.html) where you should be prompted to create a new Crickles account using your email address. If you’re a seasoned Crickles user your old Crickles data will probably be retrieved automatically so long as you use the same email address on Intervals that you used previously on Crickles. 
+3.  Once you can see the activities you expect on intervals.icu, go to [the Navigator page](https://crickles.org/app.html) where you should be prompted to create a new Crickles account using your email address. If you’re a seasoned Crickles user your old Crickles data will probably be retrieved automatically so long as you use the same email address on Intervals that you used previously on Crickles. 
 
 4.  If Crickles has not managed to recover your date of birth from your Crickles Classic account you’ll be prompted to re-enter it.
 
@@ -18,6 +18,6 @@ If you don't have a log-in for the Navigator yet here's how you get started.
 
 6.  This should take you through to the Intervals “authorise Crickles” page. Please do this too.
 
-7.  Return to the [Crickles Navigator](https://new.crickles.org/app.html). On your first visit your activities will probably take a minute or two to load, which can feel like a long time. According to how much data there is, you're likely to see a notification in brown in the bottom right of your screen followed, once a usable amount of data has been fetched and analysed, by a blue notification in the top of the sidebar. This time-consuming load only happens once.
+7.  Return to the [Crickles Navigator](https://crickles.org/app.html). On your first visit your activities will probably take a minute or two to load, which can feel like a long time. According to how much data there is, you're likely to see a notification in brown in the bottom right of your screen followed, once a usable amount of data has been fetched and analysed, by a blue notification in the top of the sidebar. This time-consuming load only happens once.
 
-If you have any issues with this process please get in touch, either directly or through [the Contact page](https://new.crickles.org/contact.html).
+If you have any issues with this process please get in touch, either directly or through [the Contact page](https://crickles.org/contact.html).
